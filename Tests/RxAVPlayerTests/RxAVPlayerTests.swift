@@ -9,7 +9,7 @@ final class RxAVPlayerTests: XCTestCase {
 
     func test_manager_player() {
         let scheduler = TestScheduler(initialClock: 0)
-        let dep = Dependency(scheduler: scheduler)
+        let dep = Dependency()
 
         let xs = dep.manager.player.asObservable()
 
@@ -25,7 +25,7 @@ final class RxAVPlayerTests: XCTestCase {
 
     func test_control_setRate() {
         let scheduler = TestScheduler(initialClock: 0)
-        let dep = Dependency(scheduler: scheduler)
+        let dep = Dependency()
         _ = dep.manager.player.subscribe()
 
         scheduler.scheduleAt(300) {
@@ -51,7 +51,7 @@ final class RxAVPlayerTests: XCTestCase {
 
     func test_monitor_rate() {
         let scheduler = TestScheduler(initialClock: 0)
-        let dep = Dependency(scheduler: scheduler)
+        let dep = Dependency()
         _ = dep.manager.player.subscribe()
 
         scheduler.scheduleAt(300) {
@@ -88,7 +88,7 @@ extension RxAVPlayerTests {
         let playerRate = PublishRelay<Float>()
         let playerItemStatus = PublishRelay<AVPlayerItem.Status>()
 
-        init(scheduler: TestScheduler) {
+        init() {
             control = VideoPlayerControl()
             stream = VideoPlayerStream(rate: playerRate.asObservable(),
                                        playerItemStatus: playerItemStatus.asObservable())

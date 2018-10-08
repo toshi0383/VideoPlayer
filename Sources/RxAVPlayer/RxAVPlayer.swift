@@ -12,12 +12,24 @@ public final class VideoPlayerManager {
     /// Note that `Single` does not replay value.
     public let player: Single<AVPlayer>
 
+    /// Controls player state
     public let control: VideoPlayerControl
+
+    /// Monitors player state
     public let monitor: VideoPlayerMonitor
+
+    /// Use this bag if you need your observable to be in sync with player lifecycle.
     public let playerDisposeBag = DisposeBag()
 
-    public init(mainScheduler: SchedulerType = ConcurrentMainScheduler.instance,
-                url: URL,
+    /// Append anything which you need to sync lifecycle with player.
+    /// e.g. QoE Object
+    public var objects: [Any] = []
+
+    /// - parameter url: playlist URL
+    /// - parameter control: You should keep this instance, just like you do in real life with TV remote.
+    /// - parameter factory: Mock and DI this protocol instance to mock player creation and states.
+    ///      seealso: MockVideoPlayerFactory
+    public init(url: URL,
                 control: VideoPlayerControl,
                 factory: VideoPlayerFactoryType = VideoPlayerFactory()) {
 
@@ -31,7 +43,7 @@ public final class VideoPlayerManager {
             .map { factory.initVideoPlayer(playerItem) }
 
             /// NOTE: KVO should be registerd from main-thread
-            .observeOn(mainScheduler)
+            .observeOn(ConcurrentMainScheduler.instance)
 
             .do(onNext: { [weak monitor, weak playerDisposeBag] videoPlayer in
                 guard let monitor = monitor,
@@ -61,7 +73,7 @@ public protocol VideoPlayerFactoryType {
 
 public final class VideoPlayerFactory: VideoPlayerFactoryType {
     public func loadAsset(_ asset: AVURLAsset) -> Observable<Void> {
-        return asset.rxav.isPlayable.filter { $0 }.map { _ in }.take(1)
+        return asset.rx.isPlayable.filter { $0 }.map { _ in }.take(1)
     }
 
     public func initVideoPlayer(_ playerItem: AVPlayerItem) -> VideoPlayerType {
@@ -78,6 +90,9 @@ public protocol VideoPlayerType {
     var stream: VideoPlayerStream { get }
 }
 
+/// AVPlayer wrapper
+///
+/// - Note: Disposed after right after player initalization via Single.
 public final class VideoPlayer: VideoPlayerType {
     public let player: AVPlayer
     public let stream: VideoPlayerStream
@@ -90,7 +105,7 @@ public final class VideoPlayer: VideoPlayerType {
 
         self.stream.setRate
             .bind(to: player.rx.setRate)
-            .disposed(by: disposeBag)
+            .disposed(by: player.rx.disposeBag)
     }
 }
 

@@ -24,7 +24,7 @@ extension Reactive where Base: AVPlayerItem {
         return observe([AVMetadataItem].self, "timedMetadata").filterNil()
     }
 
-    /// `AVPlayerItemStatus.failed`時に発火
+    /// `AVPlayerItemStatus.failed`
     var errorStatus: Observable<PlayerItemError> {
         return status
             .filter { $0 == .failed }

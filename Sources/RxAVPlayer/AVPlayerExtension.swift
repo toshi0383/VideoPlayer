@@ -3,8 +3,10 @@ import RxCocoa
 import RxSwift
 
 extension Reactive where Base: AVPlayer {
-    /// - NOTE: `play()` / `pause()` はそれぞれ `rate = 1.0` / `rate = 0.0` と同じ.
-    ///     `play()` するとrateは1.0に戻り倍速再生が意図せず終わってしまうため、使わないこと.
+
+    /// - Note: `play()` or `pause()` and `rate = 1.0` or `rate = 0.0` are equivalent.
+    /// - Note: But, `play()` end-up with `rate: 1.0` so be careful with that.
+    ///     Basically, do not use `play()`.
     var setRate: AnyObserver<Float> {
         return AnyObserver { [weak base] e in
             if let element = e.element {
@@ -18,7 +20,7 @@ extension Reactive where Base: AVPlayer {
             .filterNil()
     }
 
-    /// - Note: `AVPlayer.addPeriodicTimeObserver`が起点
+    /// - Note: via `AVPlayer.addPeriodicTimeObserver`
     func periodicTime(for interval: CMTime, queue: DispatchQueue = DispatchQueue.global(qos: .default)) -> Observable<CMTime> {
         return Observable.create { observer in
             let avTimeObserver = self.base.addPeriodicTimeObserver(forInterval: interval, queue: queue) { [observer] time  in

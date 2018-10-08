@@ -17,19 +17,25 @@ final class ViewModel {
     private let disposeBag = DisposeBag()
 
     init(requestRate: Observable<Float>,
-         requestReload: Observable<Void>) {
+         requestReload: Observable<Void>,
+         videoPlayerFactory: VideoPlayerFactoryType = VideoPlayerFactory()) {
+
+        rateButtonRate = Property(_rateButtonRate)
 
         requestRate
             .bind(to: control.setRate)
             .disposed(by: disposeBag)
 
-        rateButtonRate = Property(_rateButtonRate)
-
         requestReload
-            .startWith(())
+            .startWith(()) // NOTE: initial load
             .subscribe(onNext: { [weak self] in
                 guard let me = self else { return }
-                me.manager = VideoPlayerManager(url: me.url, control: me.control)
+
+                me.manager = VideoPlayerManager(url: me.url,
+                                                control: me.control,
+                                                factory: videoPlayerFactory)
+
+                me.manager.objects.append(Something())
 
                 me.manager.player.asObservable()
                     .bind(to: me.playerRelay)
@@ -43,4 +49,11 @@ final class ViewModel {
             })
             .disposed(by: disposeBag)
     }
+}
+
+class Something {
+    deinit {
+        print(#function)
+    }
+    init() {}
 }

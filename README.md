@@ -13,10 +13,10 @@ VideoPlayerManager
 # Usage
 ## Initializing AVPlayer
 TBD
-Observe `VideoPlayerManager.player: Single<AVPlayer>` to get created valid AVPlayer.
+Observe `VideoPlayerManager.player: Single<AVPlayer>` to get created AVPlayer immediately after initialization.
 See: [[Example]]
 
-## Monitor and control state
+## Monitor and Control state
 TBD
 See: [[Example]]
 
@@ -24,7 +24,7 @@ See: [[Example]]
 TBD
 See: [[Example]]
 
-# Build
+# Build Example
 1. Make sure your default `xcode-select -p` points at correct Xcode version.
 
 2. Run following
@@ -33,7 +33,18 @@ See: [[Example]]
    xcodegen
    ```
 
-3. Open generated xcodeproj
+3. Open `Example.xcodeproj`
+
+# Build Library
+1. Make sure your default `xcode-select -p` points at correct Xcode version.
+
+2. Run following
+   ```
+   ice xc
+   ```
+   https://github.com/jakeheis/Ice
+
+3. Open `RxAVPlayer.xcodeproj`
 
 # License
 MIT
