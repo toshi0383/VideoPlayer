@@ -14,48 +14,97 @@ public final class VideoPlayerManager {
 
     public let control: VideoPlayerControl
     public let monitor: VideoPlayerMonitor
+    public let playerDisposeBag = DisposeBag()
 
-    public init(url: URL, control: VideoPlayerControl, monitor _monitor: VideoPlayerMonitor? = nil) {
-        self.monitor = _monitor ?? VideoPlayerMonitor()
+    public init(mainScheduler: SchedulerType = ConcurrentMainScheduler.instance,
+                url: URL,
+                control: VideoPlayerControl,
+                factory: VideoPlayerFactoryType = VideoPlayerFactory()) {
+
+        self.monitor = VideoPlayerMonitor()
         self.control = control
 
         let asset = AVURLAsset(url: url)
         let playerItem = AVPlayerItem(asset: asset)
 
-        func currentTime() -> Observable<CMTime> {
-            return .create { [weak playerItem] observer in
-                func observable() -> Observable<CMTime> {
-                    guard let playerItem = playerItem else {
-                        return .empty()
-                    }
-                    return .just(playerItem.currentTime())
-                }
-                return observable().bind(to: observer)
-            }
-        }
-
-        player = asset.rx.isPlayable
-            .filter { $0 }
-            .take(1)
-            .map { _ in AVPlayer(playerItem: playerItem) }
+        player = factory.loadAsset(asset)
+            .map { factory.initVideoPlayer(playerItem) }
 
             /// NOTE: KVO should be registerd from main-thread
-            .observeOn(ConcurrentMainScheduler.instance)
+            .observeOn(mainScheduler)
 
-            .do(onNext: { [weak monitor] player in
-                guard let monitor = monitor else { return }
+            .do(onNext: { [weak monitor, weak playerDisposeBag] videoPlayer in
+                guard let monitor = monitor,
+                    let playerDisposeBag = playerDisposeBag else { return }
 
-                player.rx.rate
+                videoPlayer.stream.rate
                     .bind(to: monitor.rate)
-                    .disposed(by: player.rx.disposeBag)
+                    .disposed(by: playerDisposeBag)
 
-                Observable.combineLatest(playerItem.rx.status, control.setRate)
+                Observable.combineLatest(videoPlayer.stream.playerItemStatus, control.setRate)
                     .filter { $0.0 == .readyToPlay }
                     .map { $1 }
-                    .bind(to: player.rx.setRate)
-                    .disposed(by: player.rx.disposeBag)
+                    .bind(to: videoPlayer.stream.setRate)
+                    .disposed(by: playerDisposeBag)
             })
+            .map { $0.player }
             .asSingle()
+    }
+}
+
+// MARK: VideoPlayerFactory
+
+public protocol VideoPlayerFactoryType {
+    func loadAsset(_ asset: AVURLAsset) -> Observable<Void>
+    func initVideoPlayer(_ playerItem: AVPlayerItem) -> VideoPlayerType
+}
+
+public final class VideoPlayerFactory: VideoPlayerFactoryType {
+    public func loadAsset(_ asset: AVURLAsset) -> Observable<Void> {
+        return asset.rxav.isPlayable.filter { $0 }.map { _ in }.take(1)
+    }
+
+    public func initVideoPlayer(_ playerItem: AVPlayerItem) -> VideoPlayerType {
+        return VideoPlayer(playerItem: playerItem)
+    }
+
+    public init() { }
+}
+
+// MARK: VideoPlayer
+
+public protocol VideoPlayerType {
+    var player: AVPlayer { get }
+    var stream: VideoPlayerStream { get }
+}
+
+public final class VideoPlayer: VideoPlayerType {
+    public let player: AVPlayer
+    public let stream: VideoPlayerStream
+    private let disposeBag = DisposeBag()
+
+    public init(playerItem: AVPlayerItem) {
+        self.player = AVPlayer(playerItem: playerItem)
+        self.stream = VideoPlayerStream(rate: player.rx.rate,
+                                        playerItemStatus: playerItem.rx.status)
+
+        self.stream.setRate
+            .bind(to: player.rx.setRate)
+            .disposed(by: disposeBag)
+    }
+}
+
+// MARK: VideoPlayerStream
+
+public final class VideoPlayerStream {
+    let rate: Observable<Float>
+    let playerItemStatus: Observable<AVPlayerItem.Status>
+    let setRate = PublishRelay<Float>()
+
+    public init(rate: Observable<Float>,
+                playerItemStatus: Observable<AVPlayerItem.Status>) {
+        self.rate = rate
+        self.playerItemStatus = playerItemStatus
     }
 }
 
@@ -66,7 +115,7 @@ public final class VideoPlayerMonitor {
 
     /// NOTE: Does not `replay`.
     ///   AVPlayer.rate is also updated by the SDK.
-    let rate = PublishRelay<Float>()
+    public let rate = PublishRelay<Float>()
 }
 
 // MARK: VideoPlayerControl
@@ -75,7 +124,8 @@ public final class VideoPlayerMonitor {
 public final class VideoPlayerControl {
     public let setRate: BehaviorRelay<Float>
 
-    public init(rate: Float = 0) {
+    /// - parameter rate: set 0.0 if you prefer player to be paused initially.
+    public init(rate: Float = 1.0) {
         self.setRate = BehaviorRelay<Float>(value: rate)
     }
 }

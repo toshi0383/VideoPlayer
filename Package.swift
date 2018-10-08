@@ -1,4 +1,4 @@
-// swift-tools-version:4.0
+// swift-tools-version:4.2
 // Managed by ice
 
 import PackageDescription
@@ -13,6 +13,6 @@ let package = Package(
     ],
     targets: [
         .target(name: "RxAVPlayer", dependencies: ["RxSwift", "RxCocoa"]),
-        .testTarget(name: "RxAVPlayerTests", dependencies: ["RxAVPlayer", "RxTest"]),
+        .testTarget(name: "RxAVPlayerTests", dependencies: ["RxAVPlayer", "RxSwift", "RxCocoa", "RxTest"]),
     ]
 )

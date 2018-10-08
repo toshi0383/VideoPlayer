@@ -1,7 +1,7 @@
 import AVFoundation
 import RxSwift
 
-extension AVPlayerItemStatus: CustomStringConvertible {
+extension AVPlayerItem.Status: CustomStringConvertible {
     public var description: String {
         switch self {
         case .unknown: return "unknown"
@@ -12,8 +12,8 @@ extension AVPlayerItemStatus: CustomStringConvertible {
 }
 
 extension Reactive where Base: AVPlayerItem {
-    var status: Observable<AVPlayerItemStatus> {
-        return observe(AVPlayerItemStatus.self, "status").filterNil()
+    var status: Observable<AVPlayerItem.Status> {
+        return observe(AVPlayerItem.Status.self, "status").filterNil()
     }
 
     var seekableTimeRanges: Observable<[NSValue]> {

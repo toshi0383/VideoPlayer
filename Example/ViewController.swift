@@ -5,11 +5,11 @@ import UIKit
 
 final class ViewController: UIViewController {
 
-    let url = URL(string: "https://devstreaming-cdn.apple.com/videos/wwdc/2018/507axjplrd0yjzixfz/507/0640/0640.m3u8")!
-
-    let control = VideoPlayerControl()
-
-    var manager: VideoPlayerManager!
+    private lazy var viewModel: ViewModel = {
+        return ViewModel(requestRate: self.rateButton.nextRate.map { $0.rawValue },
+                         requestReload: self.reloadButton.rx.tap
+                            .throttle(1.0, scheduler: ConcurrentMainScheduler.instance))
+    }()
 
     private let playerView: PlayerView
     private let rateButton: RateButton
@@ -73,33 +73,15 @@ extension ViewController {
 
         // MARK: Player: load, control and monitor
 
-        rateButton.nextRate
-            .startWith(.x1_0)
-            .map { $0.rawValue }
-            .bind(to: control.setRate)
+        viewModel.playerRelay.asObservable()
+            .observeOn(ConcurrentMainScheduler.instance)
+            .subscribe(onNext: { [weak self] player in
+                self?.playerView.playerLayer.player = player
+            })
             .disposed(by: rx.disposeBag)
 
-        reloadButton.rx.tap
-            .throttle(1.0, scheduler: ConcurrentMainScheduler.instance)
-            .startWith(())
-            .observeOn(ConcurrentMainScheduler.instance)
-            .subscribe(onNext: { [weak self] in
-                guard let me = self else { return }
-                me.manager = VideoPlayerManager(url: me.url, control: me.control)
-
-                me.manager.player.asObservable()
-                    .observeOn(ConcurrentMainScheduler.instance)
-                    .subscribe(onNext: { [weak self] player in
-                        self?.playerView.playerLayer.player = player
-                    })
-                    .disposed(by: me.rx.disposeBag)
-
-                me.manager.monitor.rate
-                    .map { RateButton.Rate(rawValue: $0) }
-                    .filterNil()
-                    .bind(to: me.rateButton.rate)
-                    .disposed(by: me.rx.disposeBag)
-            })
+        viewModel.rateButtonRate.asObservable()
+            .bind(to: rateButton.rate)
             .disposed(by: rx.disposeBag)
     }
 }
