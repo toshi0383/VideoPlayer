@@ -1,16 +1,6 @@
 import AVFoundation
 import RxSwift
 
-extension AVPlayerItem.Status: CustomStringConvertible {
-    public var description: String {
-        switch self {
-        case .unknown: return "unknown"
-        case .readyToPlay: return "readyToPlay"
-        case .failed: return "failed"
-        }
-    }
-}
-
 extension Reactive where Base: AVPlayerItem {
     var status: Observable<AVPlayerItem.Status> {
         return observe(AVPlayerItem.Status.self, "status").filterNil()

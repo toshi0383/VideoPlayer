@@ -1,4 +1,5 @@
 import AVFoundation
+import RxAVPlayer
 import RxCocoa
 import RxSwift
 
@@ -39,13 +40,12 @@ final class ViewModel {
 
                 me.manager.player.asObservable()
                     .bind(to: me.playerRelay)
-                    .disposed(by: me.disposeBag)
+                    .disposed(by: me.manager.playerDisposeBag)
 
-                me.manager.monitor.rate
-                    .map { RateButton.Rate(rawValue: $0) }
-                    .filterNil()
+                me.manager.control.setRate
+                    .map { RateButton.Rate(rawValue: $0)! }
                     .bind(to: me._rateButtonRate)
-                    .disposed(by: me.disposeBag)
+                    .disposed(by: me.manager.playerDisposeBag)
             })
             .disposed(by: disposeBag)
     }
@@ -53,7 +53,7 @@ final class ViewModel {
 
 class Something {
     deinit {
-        print(#function)
+        print("Something is deallocated")
     }
     init() {}
 }

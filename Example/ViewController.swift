@@ -14,6 +14,7 @@ final class ViewController: UIViewController {
     private let playerView: PlayerView
     private let rateButton: RateButton
     private let reloadButton: UIButton
+    private let disposeBag = DisposeBag()
 
     init() {
         playerView = PlayerView()
@@ -78,10 +79,10 @@ extension ViewController {
             .subscribe(onNext: { [weak self] player in
                 self?.playerView.playerLayer.player = player
             })
-            .disposed(by: rx.disposeBag)
+            .disposed(by: disposeBag)
 
         viewModel.rateButtonRate.asObservable()
             .bind(to: rateButton.rate)
-            .disposed(by: rx.disposeBag)
+            .disposed(by: disposeBag)
     }
 }

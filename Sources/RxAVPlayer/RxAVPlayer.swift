@@ -92,7 +92,7 @@ public protocol VideoPlayerType {
 
 /// AVPlayer wrapper
 ///
-/// - Note: Disposed after right after player initalization via Single.
+/// - Note: Disposed right after player initalization via Single.
 public final class VideoPlayer: VideoPlayerType {
     public let player: AVPlayer
     public let stream: VideoPlayerStream
@@ -111,6 +111,10 @@ public final class VideoPlayer: VideoPlayerType {
 
 // MARK: VideoPlayerStream
 
+/// Expresses AVPlayer states.
+/// This is just for testability.
+///
+/// - Note: Disposed right after player initalization via Single.
 public final class VideoPlayerStream {
     let rate: Observable<Float>
     let playerItemStatus: Observable<AVPlayerItem.Status>
