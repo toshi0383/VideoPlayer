@@ -1,0 +1,14 @@
+name: Example
+options:
+  minimumXcodeGenVersion: 1.11.2
+  bundleIdPrefix: jp.toshi0383
+targets:
+  Example:
+    platform: iOS
+    type: application
+    sources:
+      - Example/
+      - Sources/RxAVPlayer/
+    dependencies:
+      - carthage: RxCocoa
+      - carthage: RxSwift
