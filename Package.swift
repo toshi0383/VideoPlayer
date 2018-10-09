@@ -4,15 +4,15 @@
 import PackageDescription
 
 let package = Package(
-    name: "RxAVPlayer",
+    name: "VideoPlayerManager",
     products: [
-        .library(name: "RxAVPlayer", targets: ["RxAVPlayer"]),
+        .library(name: "VideoPlayerManager", targets: ["VideoPlayerManager"]),
     ],
     dependencies: [
         .package(url: "https://github.com/ReactiveX/RxSwift", from: "4.3.1"),
     ],
     targets: [
-        .target(name: "RxAVPlayer", dependencies: ["RxSwift", "RxCocoa"]),
-        .testTarget(name: "RxAVPlayerTests", dependencies: ["RxAVPlayer", "RxSwift", "RxCocoa", "RxTest"]),
+        .target(name: "VideoPlayerManager", dependencies: ["RxSwift", "RxCocoa"]),
+        .testTarget(name: "VideoPlayerManagerTests", dependencies: ["VideoPlayerManager", "RxSwift", "RxCocoa", "RxTest"]),
     ]
 )

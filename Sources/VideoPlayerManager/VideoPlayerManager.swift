@@ -39,8 +39,7 @@ public final class VideoPlayerManager {
         let asset = AVURLAsset(url: url)
         let playerItem = AVPlayerItem(asset: asset)
 
-        player = factory.loadAsset(asset)
-            .map { factory.initVideoPlayer(playerItem) }
+        player = factory.makeVideoPlayer(playerItem)
 
             /// NOTE: KVO should be registerd from main-thread
             .observeOn(ConcurrentMainScheduler.instance)
@@ -67,17 +66,16 @@ public final class VideoPlayerManager {
 // MARK: VideoPlayerFactory
 
 public protocol VideoPlayerFactoryType {
-    func loadAsset(_ asset: AVURLAsset) -> Observable<Void>
-    func initVideoPlayer(_ playerItem: AVPlayerItem) -> VideoPlayerType
+    func makeVideoPlayer(_ playerItem: AVPlayerItem) -> Observable<VideoPlayerType>
 }
 
 public final class VideoPlayerFactory: VideoPlayerFactoryType {
-    public func loadAsset(_ asset: AVURLAsset) -> Observable<Void> {
-        return asset.rx.isPlayable.filter { $0 }.map { _ in }.take(1)
-    }
 
-    public func initVideoPlayer(_ playerItem: AVPlayerItem) -> VideoPlayerType {
-        return VideoPlayer(playerItem: playerItem)
+    public func makeVideoPlayer(_ playerItem: AVPlayerItem) -> Observable<VideoPlayerType> {
+        return playerItem.asset.rx.isPlayable
+            .filter { $0 }
+            .take(1)
+            .map { _ in VideoPlayer(playerItem: playerItem) }
     }
 
     public init() { }

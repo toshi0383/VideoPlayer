@@ -11,8 +11,8 @@ targets:
     dependencies:
       - carthage: RxCocoa
       - carthage: RxSwift
-      - target: RxAVPlayer
-  RxAVPlayer:
+      - target: VideoPlayerManager
+  VideoPlayerManager:
     platform: iOS
     type: framework
     sources:
@@ -20,3 +20,20 @@ targets:
     dependencies:
       - carthage: RxCocoa
       - carthage: RxSwift
+  VideoPlayerManagerTests:
+    platform: iOS
+    type: bundle.unit-test
+    sources:
+      - path: Tests/VideoPlayerManagerTests/
+        name: VideoPlayerManagerTests
+        excludes:
+        - "XCTestManifests.swift"
+    dependencies:
+      - target: VideoPlayerManager
+      - carthage: RxCocoa
+      - carthage: RxSwift
+      - carthage: RxTest
+    scheme:
+      testTargets:
+        - VideoPlayerManagerTests
+      gatherCoverageData: true

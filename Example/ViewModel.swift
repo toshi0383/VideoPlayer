@@ -1,5 +1,5 @@
 import AVFoundation
-import RxAVPlayer
+import VideoPlayerManager
 import RxCocoa
 import RxSwift
 

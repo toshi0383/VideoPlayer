@@ -1,8 +1,10 @@
-# RxAVPlayer
+# VideoPlayerManager
 ![Xcode](https://img.shields.io/badge/Xcode-10.0-brightgreen.svg)
 ![Swift](https://img.shields.io/badge/Swift-4.2-brightgreen.svg)
 
 AVPlayer control made easy.
+
+![design]()
 
 ```
 VideoPlayerManager
@@ -34,17 +36,6 @@ See: [[Example]]
    ```
 
 3. Open `Example.xcodeproj`
-
-# Build Library
-1. Make sure your default `xcode-select -p` points at correct Xcode version.
-
-2. Run following
-   ```
-   ice xc
-   ```
-   https://github.com/jakeheis/Ice
-
-3. Open `RxAVPlayer.xcodeproj`
 
 # License
 MIT

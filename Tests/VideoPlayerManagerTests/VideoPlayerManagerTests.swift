@@ -1,11 +1,11 @@
 import AVFoundation
-@testable import RxAVPlayer // to test VideoPlayerStream
+@testable import VideoPlayerManager // to test VideoPlayerStream
 import RxCocoa
 import RxSwift
 import RxTest
 import XCTest
 
-final class RxAVPlayerTests: XCTestCase {
+final class VideoPlayerManagerTests: XCTestCase {
 
     func test_manager_player() {
         let scheduler = TestScheduler(initialClock: 0)
@@ -76,7 +76,7 @@ final class RxAVPlayerTests: XCTestCase {
     ]
 }
 
-extension RxAVPlayerTests {
+extension VideoPlayerManagerTests {
 
     final class Dependency {
         let url = URL(string: "http://example.com/hello.m3u8")!
