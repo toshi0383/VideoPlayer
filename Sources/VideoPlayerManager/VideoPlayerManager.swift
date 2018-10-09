@@ -70,15 +70,23 @@ public protocol VideoPlayerFactoryType {
 }
 
 public final class VideoPlayerFactory: VideoPlayerFactoryType {
+    public let assetResourceLoaderDelegate: AVAssetResourceLoaderDelegate?
 
     public func makeVideoPlayer(_ playerItem: AVPlayerItem) -> Observable<VideoPlayerType> {
+        if let delegate = assetResourceLoaderDelegate {
+            (playerItem.asset as? AVURLAsset)?.resourceLoader
+                .setDelegate(delegate, queue: .global(qos: .default))
+        }
+
         return playerItem.asset.rx.isPlayable
             .filter { $0 }
             .take(1)
             .map { _ in VideoPlayer(playerItem: playerItem) }
     }
 
-    public init() { }
+    public init(assetResourceLoaderDelegate: AVAssetResourceLoaderDelegate? = nil) {
+        self.assetResourceLoaderDelegate = assetResourceLoaderDelegate
+    }
 }
 
 // MARK: VideoPlayer
