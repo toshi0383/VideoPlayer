@@ -4,7 +4,7 @@
 
 AVPlayer control made easy.
 
-![design]()
+![design](https://github.com/toshi0383/assets/blob/master/VideoPlayerManager/VideoPlayerManager-en.png?raw=true)
 
 ```
 VideoPlayerManager
@@ -14,17 +14,19 @@ VideoPlayerManager
 
 # Usage
 ## Initializing AVPlayer
-TBD
 Observe `VideoPlayerManager.player: Single<AVPlayer>` to get created AVPlayer immediately after initialization.
-See: [[Example]]
+
+See: [Example](Example/)
 
 ## Monitor and Control state
 TBD
-See: [[Example]]
+
+See: [Example](Example/)
 
 ## Handling Errors
 TBD
-See: [[Example]]
+
+See: [Example](Example/)
 
 # Build Example
 1. Make sure your default `xcode-select -p` points at correct Xcode version.
