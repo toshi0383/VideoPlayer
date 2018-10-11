@@ -94,10 +94,10 @@ public final class VideoPlayer {
                     .distinctUntilChanged()
                     .share(replay: 1)
 
-                // FIXME: assetDuration for VOD contents
+                #warning("FIXME: assetDuration for VOD contents")
                 let duration = endPosition.share(replay: 1, scope: .whileConnected)
 
-                // FIXME: not necessary for LIVE contents
+                #warning("FIXME: not necessary for LIVE contents")
                 Observable.combineLatest(isSeekable, control.seekTo.asObservable())
                     .map { $0.0 ? $0.1 : nil }
                     .filterNil()
