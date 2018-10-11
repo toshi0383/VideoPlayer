@@ -6,7 +6,7 @@ import RxSwift
 /// while setting up monitor and control module.
 ///
 /// NOTE: Make sure the lifecycle of this class is synced with the player instance.
-public final class VideoPlayerManager {
+public final class VideoPlayer {
 
     /// Emits and cache AVPlayer once initialized.
     /// Note that `Single` does not replay value.
@@ -25,6 +25,8 @@ public final class VideoPlayerManager {
     /// e.g. QoE Object
     public var objects: [Any] = []
 
+    /// Initializes VideoPlayer
+    ///
     /// - parameter url: playlist URL
     /// - parameter control: You should keep this instance, just like you do in real life with TV remote.
     /// - parameter factory: Mock and DI this protocol instance to mock player creation and states.
@@ -36,10 +38,7 @@ public final class VideoPlayerManager {
         self.monitor = VideoPlayerMonitor()
         self.control = control
 
-        let asset = AVURLAsset(url: url)
-        let playerItem = AVPlayerItem(asset: asset)
-
-        player = factory.makeVideoPlayer(playerItem)
+        player = factory.makeVideoPlayer(AVPlayerItem(asset: AVURLAsset(url: url)))
 
             /// NOTE: KVO should be registerd from main-thread
             .observeOn(ConcurrentMainScheduler.instance)
@@ -65,14 +64,15 @@ public final class VideoPlayerManager {
 
 // MARK: VideoPlayerFactory
 
+/// VideoPlayer will use this to get VideoPlayer instance.
 public protocol VideoPlayerFactoryType {
-    func makeVideoPlayer(_ playerItem: AVPlayerItem) -> Observable<VideoPlayerType>
+    func makeVideoPlayer(_ playerItem: AVPlayerItem) -> Observable<AVPlayerWrapperType>
 }
 
 public final class VideoPlayerFactory: VideoPlayerFactoryType {
     public let assetResourceLoaderDelegate: AVAssetResourceLoaderDelegate?
 
-    public func makeVideoPlayer(_ playerItem: AVPlayerItem) -> Observable<VideoPlayerType> {
+    public func makeVideoPlayer(_ playerItem: AVPlayerItem) -> Observable<AVPlayerWrapperType> {
         if let delegate = assetResourceLoaderDelegate {
             (playerItem.asset as? AVURLAsset)?.resourceLoader
                 .setDelegate(delegate, queue: .global(qos: .default))
@@ -81,7 +81,7 @@ public final class VideoPlayerFactory: VideoPlayerFactoryType {
         return playerItem.asset.rx.isPlayable
             .filter { $0 }
             .take(1)
-            .map { _ in VideoPlayer(playerItem: playerItem) }
+            .map { _ in AVPlayerWrapper(playerItem: playerItem) }
     }
 
     public init(assetResourceLoaderDelegate: AVAssetResourceLoaderDelegate? = nil) {
@@ -91,7 +91,7 @@ public final class VideoPlayerFactory: VideoPlayerFactoryType {
 
 // MARK: VideoPlayer
 
-public protocol VideoPlayerType {
+public protocol AVPlayerWrapperType {
     var player: AVPlayer { get }
     var stream: VideoPlayerStream { get }
 }
@@ -99,15 +99,30 @@ public protocol VideoPlayerType {
 /// AVPlayer wrapper
 ///
 /// - Note: Disposed right after player initalization via Single.
-public final class VideoPlayer: VideoPlayerType {
+public final class AVPlayerWrapper: AVPlayerWrapperType {
     public let player: AVPlayer
     public let stream: VideoPlayerStream
+
     private let disposeBag = DisposeBag()
 
     public init(playerItem: AVPlayerItem) {
         self.player = AVPlayer(playerItem: playerItem)
+
+        func currentTime() -> Observable<CMTime> {
+            return .create { [weak playerItem] observer in
+                func observable() -> Observable<CMTime> {
+                    guard let playerItem = playerItem else {
+                        return .empty()
+                    }
+                    return .just(playerItem.currentTime())
+                }
+                return observable().bind(to: observer)
+            }
+        }
+
         self.stream = VideoPlayerStream(rate: player.rx.rate,
-                                        playerItemStatus: playerItem.rx.status)
+                                        playerItemStatus: playerItem.rx.status,
+                                        currentTime: currentTime())
 
         self.stream.setRate
             .bind(to: player.rx.setRate)
@@ -125,11 +140,15 @@ public final class VideoPlayerStream {
     let rate: Observable<Float>
     let playerItemStatus: Observable<AVPlayerItem.Status>
     let setRate = PublishRelay<Float>()
+    let currentTime: Observable<CMTime>
 
     public init(rate: Observable<Float>,
-                playerItemStatus: Observable<AVPlayerItem.Status>) {
+                playerItemStatus: Observable<AVPlayerItem.Status>,
+                currentTime: Observable<CMTime>
+                ) {
         self.rate = rate
         self.playerItemStatus = playerItemStatus
+        self.currentTime = currentTime
     }
 }
 

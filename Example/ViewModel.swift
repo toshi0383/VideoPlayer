@@ -1,5 +1,5 @@
 import AVFoundation
-import VideoPlayerManager
+import VideoPlayer
 import RxCocoa
 import RxSwift
 
@@ -12,7 +12,7 @@ final class ViewModel {
 
     private let url = URL(string: "https://devstreaming-cdn.apple.com/videos/wwdc/2018/507axjplrd0yjzixfz/507/0640/0640.m3u8")!
 
-    private var manager: VideoPlayerManager!
+    private var player: VideoPlayer!
 
     private let control = VideoPlayerControl()
     private let disposeBag = DisposeBag()
@@ -32,20 +32,20 @@ final class ViewModel {
             .subscribe(onNext: { [weak self] in
                 guard let me = self else { return }
 
-                me.manager = VideoPlayerManager(url: me.url,
-                                                control: me.control,
-                                                factory: videoPlayerFactory)
+                me.player = VideoPlayer(url: me.url,
+                                        control: me.control,
+                                        factory: videoPlayerFactory)
 
-                me.manager.objects.append(Something())
+                me.player.objects.append(Something())
 
-                me.manager.player.asObservable()
+                me.player.player.asObservable()
                     .bind(to: me.playerRelay)
-                    .disposed(by: me.manager.playerDisposeBag)
+                    .disposed(by: me.player.playerDisposeBag)
 
-                me.manager.control.setRate
+                me.player.control.setRate
                     .map { RateButton.Rate(rawValue: $0)! }
                     .bind(to: me._rateButtonRate)
-                    .disposed(by: me.manager.playerDisposeBag)
+                    .disposed(by: me.player.playerDisposeBag)
             })
             .disposed(by: disposeBag)
     }

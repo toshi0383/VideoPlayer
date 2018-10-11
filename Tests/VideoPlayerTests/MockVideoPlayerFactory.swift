@@ -1,5 +1,5 @@
 import AVFoundation
-import VideoPlayerManager
+import VideoPlayer
 import RxSwift
 
 public final class MockVideoPlayerFactory: VideoPlayerFactoryType {
@@ -14,12 +14,12 @@ public final class MockVideoPlayerFactory: VideoPlayerFactoryType {
         self.stream = stream
     }
 
-    public func makeVideoPlayer(_ playerItem: AVPlayerItem) -> Observable<VideoPlayerType> {
+    public func makeVideoPlayer(_ playerItem: AVPlayerItem) -> Observable<AVPlayerWrapperType> {
         return .just(MockVideoPlayer(player: player, stream: stream))
     }
 }
 
-public final class MockVideoPlayer: VideoPlayerType {
+public final class MockVideoPlayer: AVPlayerWrapperType {
 
     public let player: AVPlayer
     public let stream: VideoPlayerStream

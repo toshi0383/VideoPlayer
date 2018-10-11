@@ -1,17 +1,19 @@
 import AVFoundation
-@testable import VideoPlayerManager // to test VideoPlayerStream
 import RxCocoa
 import RxSwift
 import RxTest
 import XCTest
 
-final class VideoPlayerManagerTests: XCTestCase {
+// NOTE: `@testable` to test VideoPlayerStream.setRate and other relay and observables.
+@testable import VideoPlayer
 
-    func test_manager_player() {
+final class VideoPlayerTests: XCTestCase {
+
+    func test_player_player() {
         let scheduler = TestScheduler(initialClock: 0)
         let dep = Dependency()
 
-        let xs = dep.manager.player.asObservable()
+        let xs = dep.player.player.asObservable()
 
         let res = scheduler.start { xs }
 
@@ -26,7 +28,7 @@ final class VideoPlayerManagerTests: XCTestCase {
     func test_control_setRate() {
         let scheduler = TestScheduler(initialClock: 0)
         let dep = Dependency()
-        _ = dep.manager.player.subscribe()
+        _ = dep.player.player.subscribe()
 
         scheduler.scheduleAt(300) {
             dep.playerRate.accept(1.0)
@@ -52,14 +54,14 @@ final class VideoPlayerManagerTests: XCTestCase {
     func test_monitor_rate() {
         let scheduler = TestScheduler(initialClock: 0)
         let dep = Dependency()
-        _ = dep.manager.player.subscribe()
+        _ = dep.player.player.subscribe()
 
         scheduler.scheduleAt(300) {
             dep.playerRate.accept(1.0)
             dep.playerItemStatus.accept(.readyToPlay)
         }
 
-        let xs = dep.manager.monitor.rate.asObservable()
+        let xs = dep.player.monitor.rate.asObservable()
 
         let res = scheduler.start { xs }
 
@@ -76,12 +78,12 @@ final class VideoPlayerManagerTests: XCTestCase {
     ]
 }
 
-extension VideoPlayerManagerTests {
+extension VideoPlayerTests {
 
     final class Dependency {
         let url = URL(string: "http://example.com/hello.m3u8")!
         let control: VideoPlayerControl
-        let manager: VideoPlayerManager
+        let player: VideoPlayer
         let stream: VideoPlayerStream
         let factory: MockVideoPlayerFactory
 
@@ -91,11 +93,12 @@ extension VideoPlayerManagerTests {
         init() {
             control = VideoPlayerControl()
             stream = VideoPlayerStream(rate: playerRate.asObservable(),
-                                       playerItemStatus: playerItemStatus.asObservable())
+                                       playerItemStatus: playerItemStatus.asObservable(),
+                                       currentTime: .empty())
             factory = MockVideoPlayerFactory(stream: stream)
-            manager = VideoPlayerManager(url: url,
-                                         control: control,
-                                         factory: factory)
+            player = VideoPlayer(url: url,
+                                 control: control,
+                                 factory: factory)
         }
     }
 }

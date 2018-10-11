@@ -1,20 +1,20 @@
-# VideoPlayerManager
+# VideoPlayer
 ![Xcode](https://img.shields.io/badge/Xcode-10.0-brightgreen.svg)
 ![Swift](https://img.shields.io/badge/Swift-4.2-brightgreen.svg)
 
 AVPlayer control made easy.
 
-![design](https://github.com/toshi0383/assets/blob/master/VideoPlayerManager/VideoPlayerManager-en.png?raw=true)
+![design](https://github.com/toshi0383/assets/blob/master/VideoPlayer/VideoPlayer-en.png?raw=true)
 
 ```
-VideoPlayerManager
+VideoPlayer
 - VideoPlayerControl
 - VideoPlayerMonitor
 ```
 
 # Usage
 ## Initializing AVPlayer
-Observe `VideoPlayerManager.player: Single<AVPlayer>` to get created AVPlayer immediately after initialization.
+Observe `VideoPlayer.player: Single<AVPlayer>` to get created AVPlayer immediately after initialization.
 
 See: [Example](Example/)
 
