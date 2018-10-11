@@ -29,7 +29,7 @@ extension Reactive where Base: AVPlayerItem {
     }
 
     /// `AVPlayerItemStatus.failed` or `NSNotification.Name.AVPlayerItemFailedToPlayToEndTime` or `NSNotification.Name.AVPlayerItemPlaybackStalled` 時に発火
-    func asAnyErrorObservable(with notification: NotificationCenter = .default) -> Observable<PlayerItemError> {
+    func anyError(with notification: NotificationCenter = .default) -> Observable<PlayerItemError> {
         let failedToPlay: Observable<PlayerItemError> = notification.rx.notification(.AVPlayerItemFailedToPlayToEndTime, object: base)
             .map { _ in .failedToPlayToEnd }
 
@@ -37,10 +37,6 @@ extension Reactive where Base: AVPlayerItem {
             .map { _ in .stalled }
 
         return Observable.of(errorStatus, failedToPlay, stalled).merge()
-    }
-
-    func asEndTimeObervable(with notification: NotificationCenter = .default) -> Observable<Void> {
-        return notification.rx.notification(.AVPlayerItemDidPlayToEndTime, object: base).map(void)
     }
 
     var preferredPeakBitRate: AnyObserver<Double> {

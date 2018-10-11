@@ -92,9 +92,20 @@ extension VideoPlayerTests {
 
         init() {
             control = VideoPlayerControl()
-            stream = VideoPlayerStream(rate: playerRate.asObservable(),
+            stream = VideoPlayerStream(isPlayable: .just(true),
+                                       assetDuration: .empty(),
                                        playerItemStatus: playerItemStatus.asObservable(),
-                                       currentTime: .empty())
+                                       seekableTimeRanges: .empty(),
+                                       timedMetadata: .empty(),
+                                       currentTime: .empty(),
+                                       rate: playerRate.asObservable(),
+                                       setPreferredPeakBitrate: { _ in },
+                                       setVolume: { _ in },
+                                       seekTo: { _ in .empty() },
+                                       setRate: { _ in },
+                                       didPlayToEndTime: .empty(),
+                                       playerError: .empty())
+
             factory = MockVideoPlayerFactory(stream: stream)
             player = VideoPlayer(url: url,
                                  control: control,

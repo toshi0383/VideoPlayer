@@ -18,8 +18,8 @@ final class ViewModel {
     private let disposeBag = DisposeBag()
 
     init(requestRate: Observable<Float>,
-         requestReload: Observable<Void>,
-         videoPlayerFactory: VideoPlayerFactoryType = VideoPlayerFactory()) {
+         requestReloadWithEnableAirPlay: Observable<Bool>,
+         videoPlayerFactory: VideoPlayerFactoryType? = nil) {
 
         rateButtonRate = Property(_rateButtonRate)
 
@@ -27,14 +27,17 @@ final class ViewModel {
             .bind(to: control.setRate)
             .disposed(by: disposeBag)
 
-        requestReload
-            .startWith(()) // NOTE: initial load
-            .subscribe(onNext: { [weak self] in
+        requestReloadWithEnableAirPlay
+            .startWith(false) // NOTE: initial load
+            .subscribe(onNext: { [weak self] enableAirPlay in
                 guard let me = self else { return }
+
+                let factory = videoPlayerFactory
+                    ?? VideoPlayerFactory(configuration: .init(enableAirPlay: enableAirPlay))
 
                 me.player = VideoPlayer(url: me.url,
                                         control: me.control,
-                                        factory: videoPlayerFactory)
+                                        factory: factory)
 
                 me.player.objects.append(Something())
 

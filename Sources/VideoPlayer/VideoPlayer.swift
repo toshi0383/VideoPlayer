@@ -31,6 +31,7 @@ public final class VideoPlayer {
     /// - parameter control: You should keep this instance, just like you do in real life with TV remote.
     /// - parameter factory: Mock and DI this protocol instance to mock player creation and states.
     ///      seealso: MockVideoPlayerFactory
+    /// - developer note: NOT allowed to touch raw AVPleyer instance.
     public init(url: URL,
                 control: VideoPlayerControl,
                 factory: VideoPlayerFactoryType = VideoPlayerFactory()) {
@@ -41,20 +42,74 @@ public final class VideoPlayer {
         player = factory.makeVideoPlayer(AVPlayerItem(asset: AVURLAsset(url: url)))
 
             /// NOTE: KVO should be registerd from main-thread
+            ///   https://developer.apple.com/documentation/avfoundation/avplayer
             .observeOn(ConcurrentMainScheduler.instance)
 
             .do(onNext: { [weak monitor, weak playerDisposeBag] videoPlayer in
                 guard let monitor = monitor,
                     let playerDisposeBag = playerDisposeBag else { return }
 
-                videoPlayer.stream.rate
+                let stream = videoPlayer.stream
+
+                stream.rate
                     .bind(to: monitor.rate)
                     .disposed(by: playerDisposeBag)
 
-                Observable.combineLatest(videoPlayer.stream.playerItemStatus, control.setRate)
+                Observable.combineLatest(stream.playerItemStatus, control.setRate)
                     .filter { $0.0 == .readyToPlay }
                     .map { $1 }
-                    .bind(to: videoPlayer.stream.setRate)
+                    .bind(to: stream.setRate)
+                    .disposed(by: playerDisposeBag)
+
+                stream.isPlayerSeeking
+                    .bind(to: monitor.isPlayerSeeking)
+                    .disposed(by: playerDisposeBag)
+
+                let isPlayable = stream.isPlayable
+                let playerItemStatus = stream.playerItemStatus
+
+                let isPlayableAndReadyToPlay = Observable.combineLatest(isPlayable,
+                                                                        playerItemStatus)
+                    .map { $0.0 && $0.1 == .readyToPlay }
+                    .distinctUntilChanged()
+                    .share(replay: 1)
+
+                let endPosition = stream.seekableTimeRanges
+                    .map { seekableTimeRanges -> CMTime? in
+                        guard let seekableLastTimeRanges = seekableTimeRanges.last else { return nil }
+
+                        let seekableLastTimeRangeValue = seekableLastTimeRanges.timeRangeValue
+                        guard seekableLastTimeRangeValue != kCMTimeRangeInvalid
+                            && seekableLastTimeRangeValue != kCMTimeRangeZero else { return nil }
+
+                        let endPosition = seekableLastTimeRangeValue.start + seekableLastTimeRangeValue.duration
+                        guard endPosition.seconds > 0 else { return nil }
+
+                        return endPosition
+                    }
+                    .filterNil()
+
+                let isSeekable = Observable.combineLatest(isPlayableAndReadyToPlay, endPosition)
+                    .map { $0 && $1.isValid && !$1.isIndefinite } // Indefinite is duration of a live broadcast
+                    .distinctUntilChanged()
+                    .share(replay: 1)
+
+                // FIXME: assetDuration for VOD contents
+                let duration = endPosition.share(replay: 1, scope: .whileConnected)
+
+                // FIXME: not necessary for LIVE contents
+                Observable.combineLatest(isSeekable, control.seekTo.asObservable())
+                    .map { $0.0 ? $0.1 : nil }
+                    .filterNil()
+                    .withLatestFrom(duration) { ($0, $1) }
+                    .map { args in
+                        let (time, duration) = args
+
+                        return time.seconds >= 0
+                            ? CMTime(seconds: time.seconds, preferredTimescale: duration.timescale)
+                            : CMTime(seconds: -1, preferredTimescale: duration.timescale)
+                    }
+                    .bind(to: stream.requestSeekTo)
                     .disposed(by: playerDisposeBag)
             })
             .map { $0.player }
@@ -70,7 +125,18 @@ public protocol VideoPlayerFactoryType {
 }
 
 public final class VideoPlayerFactory: VideoPlayerFactoryType {
+
+    public final class Configuration {
+        let enableAirPlay: Bool
+
+        public init(enableAirPlay: Bool = false) {
+            self.enableAirPlay = enableAirPlay
+        }
+    }
+
     public let assetResourceLoaderDelegate: AVAssetResourceLoaderDelegate?
+
+    private let configuration: Configuration
 
     public func makeVideoPlayer(_ playerItem: AVPlayerItem) -> Observable<AVPlayerWrapperType> {
         if let delegate = assetResourceLoaderDelegate {
@@ -81,10 +147,15 @@ public final class VideoPlayerFactory: VideoPlayerFactoryType {
         return playerItem.asset.rx.isPlayable
             .filter { $0 }
             .take(1)
-            .map { _ in AVPlayerWrapper(playerItem: playerItem) }
+            .map { [weak self] _ in
+                AVPlayerWrapper(playerItem: playerItem,
+                                enableAirPlay: self?.configuration.enableAirPlay ?? false)
+            }
     }
 
-    public init(assetResourceLoaderDelegate: AVAssetResourceLoaderDelegate? = nil) {
+    public init(configuration: Configuration = .init(),
+                assetResourceLoaderDelegate: AVAssetResourceLoaderDelegate? = nil) {
+        self.configuration = configuration
         self.assetResourceLoaderDelegate = assetResourceLoaderDelegate
     }
 }
@@ -97,16 +168,23 @@ public protocol AVPlayerWrapperType {
 }
 
 /// AVPlayer wrapper
+/// Allowed to touch raw AVPlayer instance.
+/// Responsible for binding player state to VideoPlayerStream and vice-versa.
 ///
 /// - Note: Disposed right after player initalization via Single.
 public final class AVPlayerWrapper: AVPlayerWrapperType {
+
     public let player: AVPlayer
     public let stream: VideoPlayerStream
 
     private let disposeBag = DisposeBag()
 
-    public init(playerItem: AVPlayerItem) {
+    public init(playerItem: AVPlayerItem,
+                enableAirPlay: Bool,
+                notification: NotificationCenter = .default) {
+
         self.player = AVPlayer(playerItem: playerItem)
+        self.player.usesExternalPlaybackWhileExternalScreenIsActive = enableAirPlay
 
         func currentTime() -> Observable<CMTime> {
             return .create { [weak playerItem] observer in
@@ -120,35 +198,49 @@ public final class AVPlayerWrapper: AVPlayerWrapperType {
             }
         }
 
-        self.stream = VideoPlayerStream(rate: player.rx.rate,
+        guard let asset = playerItem.asset as? AVURLAsset else {
+            fatalError("`playerItem.asset` must be an AVURLAsset instance.")
+        }
+
+        let playerError = playerItem.rx.anyError(with: notification)
+
+        self.stream = VideoPlayerStream(isPlayable: asset.rx.isPlayable,
+                                        assetDuration: asset.rx.duration,
                                         playerItemStatus: playerItem.rx.status,
-                                        currentTime: currentTime())
+                                        seekableTimeRanges: playerItem.rx.seekableTimeRanges,
+                                        timedMetadata: playerItem.rx.timedMetadata,
+                                        currentTime: currentTime(),
+                                        rate: player.rx.rate,
+                                        setPreferredPeakBitrate: { [weak playerItem] bitrate in
+                                            playerItem?.preferredPeakBitRate = bitrate
+                                        },
+                                        setVolume: { [weak player] volume in
+                                            player?.volume = volume
+                                        },
+                                        seekTo: { seekTo -> Observable<Bool> in
+                                            return Observable.create { [weak playerItem] observer in
+                                                playerItem?.seek(to: seekTo, toleranceBefore: kCMTimeZero, toleranceAfter: kCMTimeZero, completionHandler: { finished in
 
-        self.stream.setRate
-            .bind(to: player.rx.setRate)
-            .disposed(by: player.rx.disposeBag)
-    }
-}
+                                                    // Note:
+                                                    //   We don't know if `finished: false` means that either
+                                                    //   current seek is cancelled or being interrupted by other seek.
 
-// MARK: VideoPlayerStream
+                                                    observer.onNext(finished)
+                                                    observer.onCompleted()
+                                                })
 
-/// Expresses AVPlayer states.
-/// This is just for testability.
-///
-/// - Note: Disposed right after player initalization via Single.
-public final class VideoPlayerStream {
-    let rate: Observable<Float>
-    let playerItemStatus: Observable<AVPlayerItem.Status>
-    let setRate = PublishRelay<Float>()
-    let currentTime: Observable<CMTime>
-
-    public init(rate: Observable<Float>,
-                playerItemStatus: Observable<AVPlayerItem.Status>,
-                currentTime: Observable<CMTime>
-                ) {
-        self.rate = rate
-        self.playerItemStatus = playerItemStatus
-        self.currentTime = currentTime
+                                                return Disposables.create()
+                                            }
+                                            .startWith(true)
+                                            .map { _ in false }
+                                        },
+                                        setRate: { [weak player] rate in
+                                            player?.rate = rate
+                                        },
+                                        didPlayToEndTime: notification.rx
+                                            .notification(.AVPlayerItemDidPlayToEndTime, object: playerItem)
+                                            .map(void),
+                                        playerError: playerError)
     }
 }
 
@@ -160,6 +252,8 @@ public final class VideoPlayerMonitor {
     /// NOTE: Does not `replay`.
     ///   AVPlayer.rate is also updated by the SDK.
     public let rate = PublishRelay<Float>()
+
+    public let isPlayerSeeking = BehaviorRelay<Bool>(value: false)
 }
 
 // MARK: VideoPlayerControl
@@ -167,9 +261,13 @@ public final class VideoPlayerMonitor {
 /// Player Controller
 public final class VideoPlayerControl {
     public let setRate: BehaviorRelay<Float>
+    public let seekTo: BehaviorRelay<CMTime>
 
     /// - parameter rate: set 0.0 if you prefer player to be paused initially.
-    public init(rate: Float = 1.0) {
-        self.setRate = BehaviorRelay<Float>(value: rate)
+    /// - parameter seekTO: initial seek position to start playback
+    public init(rate: Float = 1.0,
+                seekTo: CMTime = CMTime(seconds: 0, preferredTimescale: 1)) {
+        self.setRate = BehaviorRelay(value: rate)
+        self.seekTo = BehaviorRelay(value: seekTo)
     }
 }
