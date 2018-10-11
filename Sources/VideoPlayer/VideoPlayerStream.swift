@@ -30,10 +30,6 @@ public final class VideoPlayerStream {
 
     let isPlayerSeeking = PublishRelay<Bool>()
 
-    // MARK: Private
-
-    private let disposeBag = DisposeBag()
-
     /// - parameter seekTo: Seek player
     public init(isPlayable: Observable<Bool>,
                 assetDuration: Observable<CMTime>,
@@ -47,7 +43,8 @@ public final class VideoPlayerStream {
                 seekTo: @escaping (CMTime) -> Observable<Bool>,
                 setRate: @escaping (Float) -> Void,
                 didPlayToEndTime: Observable<Void>,
-                playerError: Observable<PlayerItemError>
+                playerError: Observable<PlayerItemError>,
+                playerDisposeBag: DisposeBag
         ) {
         self.isPlayable = isPlayable
         self.rate = rate
@@ -59,15 +56,15 @@ public final class VideoPlayerStream {
 
         self.setRate
             .subscribe(onNext: { setRate($0) })
-            .disposed(by: disposeBag)
+            .disposed(by: playerDisposeBag)
 
         self.setVolume
             .subscribe(onNext: { setVolume($0) })
-            .disposed(by: disposeBag)
+            .disposed(by: playerDisposeBag)
 
         self.setPreferredPeakBitrate
             .subscribe(onNext: { setPreferredPeakBitrate($0) })
-            .disposed(by: disposeBag)
+            .disposed(by: playerDisposeBag)
 
     }
 }

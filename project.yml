@@ -2,6 +2,9 @@ name: Example
 options:
   minimumXcodeGenVersion: 1.11.2
   bundleIdPrefix: jp.toshi0383
+configFiles:
+  Debug: user.xcconfig
+  Release: user.xcconfig
 targets:
   Example:
     platform: iOS

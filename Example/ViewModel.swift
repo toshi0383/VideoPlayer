@@ -12,7 +12,13 @@ final class ViewModel {
 
     private let url = URL(string: "https://devstreaming-cdn.apple.com/videos/wwdc/2018/507axjplrd0yjzixfz/507/0640/0640.m3u8")!
 
-    private var player: VideoPlayer!
+    private var player: VideoPlayer! {
+        didSet {
+            monitor = player?.monitor
+        }
+    }
+
+    private(set) weak var monitor: VideoPlayerMonitor?
 
     private let control = VideoPlayerControl()
     private let disposeBag = DisposeBag()
@@ -23,7 +29,17 @@ final class ViewModel {
 
         rateButtonRate = Property(_rateButtonRate)
 
-        requestRate
+        #warning("FIXME: stub")
+        let isRecording = Observable.just(false)
+        #warning("FIXME: stub")
+        let playPauseByApplicationState = Observable<Float>.empty()
+
+        Observable
+            .combineLatest(Observable.merge(requestRate,
+                                            playPauseByApplicationState.startWith(1.0)),
+                           isRecording)
+            .filter { !$1 }
+            .map { $0.0 }
             .bind(to: control.setRate)
             .disposed(by: disposeBag)
 

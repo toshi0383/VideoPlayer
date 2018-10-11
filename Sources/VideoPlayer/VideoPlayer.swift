@@ -39,7 +39,8 @@ public final class VideoPlayer {
         self.monitor = VideoPlayerMonitor()
         self.control = control
 
-        player = factory.makeVideoPlayer(AVPlayerItem(asset: AVURLAsset(url: url)))
+        player = factory.makeVideoPlayer(AVPlayerItem(asset: AVURLAsset(url: url)),
+                                         playerDisposeBag: playerDisposeBag)
 
             /// NOTE: KVO should be registerd from main-thread
             ///   https://developer.apple.com/documentation/avfoundation/avplayer
@@ -121,7 +122,7 @@ public final class VideoPlayer {
 
 /// VideoPlayer will use this to get VideoPlayer instance.
 public protocol VideoPlayerFactoryType {
-    func makeVideoPlayer(_ playerItem: AVPlayerItem) -> Observable<AVPlayerWrapperType>
+    func makeVideoPlayer(_ playerItem: AVPlayerItem, playerDisposeBag: DisposeBag) -> Observable<AVPlayerWrapperType>
 }
 
 public final class VideoPlayerFactory: VideoPlayerFactoryType {
@@ -138,7 +139,8 @@ public final class VideoPlayerFactory: VideoPlayerFactoryType {
 
     private let configuration: Configuration
 
-    public func makeVideoPlayer(_ playerItem: AVPlayerItem) -> Observable<AVPlayerWrapperType> {
+    public func makeVideoPlayer(_ playerItem: AVPlayerItem,
+                                playerDisposeBag: DisposeBag) -> Observable<AVPlayerWrapperType> {
         if let delegate = assetResourceLoaderDelegate {
             (playerItem.asset as? AVURLAsset)?.resourceLoader
                 .setDelegate(delegate, queue: .global(qos: .default))
@@ -149,7 +151,8 @@ public final class VideoPlayerFactory: VideoPlayerFactoryType {
             .take(1)
             .map { [weak self] _ in
                 AVPlayerWrapper(playerItem: playerItem,
-                                enableAirPlay: self?.configuration.enableAirPlay ?? false)
+                                enableAirPlay: self?.configuration.enableAirPlay ?? false,
+                                playerDisposeBag: playerDisposeBag)
             }
     }
 
@@ -177,10 +180,9 @@ public final class AVPlayerWrapper: AVPlayerWrapperType {
     public let player: AVPlayer
     public let stream: VideoPlayerStream
 
-    private let disposeBag = DisposeBag()
-
     public init(playerItem: AVPlayerItem,
                 enableAirPlay: Bool,
+                playerDisposeBag: DisposeBag,
                 notification: NotificationCenter = .default) {
 
         self.player = AVPlayer(playerItem: playerItem)
@@ -240,7 +242,8 @@ public final class AVPlayerWrapper: AVPlayerWrapperType {
                                         didPlayToEndTime: notification.rx
                                             .notification(.AVPlayerItemDidPlayToEndTime, object: playerItem)
                                             .map(void),
-                                        playerError: playerError)
+                                        playerError: playerError,
+                                        playerDisposeBag: playerDisposeBag)
     }
 }
 
@@ -254,6 +257,13 @@ public final class VideoPlayerMonitor {
     public let rate = PublishRelay<Float>()
 
     public let isPlayerSeeking = BehaviorRelay<Bool>(value: false)
+
+    internal var consoleString: Observable<String> {
+        return Observable
+            .combineLatest(rate.map { "rate: \($0)" },
+                           isPlayerSeeking.map { "isPlayerSeeking: \($0)" })
+            .map { [$0, $1].joined(separator: "\n") }
+    }
 }
 
 // MARK: VideoPlayerControl
