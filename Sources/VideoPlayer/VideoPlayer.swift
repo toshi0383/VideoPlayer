@@ -41,11 +41,7 @@ public final class VideoPlayer {
 
         player = factory.makeVideoPlayer(AVPlayerItem(asset: AVURLAsset(url: url)),
                                          playerDisposeBag: playerDisposeBag)
-
-            /// NOTE: KVO should be registerd from main-thread
-            ///   https://developer.apple.com/documentation/avfoundation/avplayer
-            .observeOn(ConcurrentMainScheduler.instance)
-
+            .observeOn(ConcurrentDispatchQueueScheduler(qos: .default))
             .do(onNext: { [weak monitor, weak playerDisposeBag] videoPlayer in
                 guard let monitor = monitor,
                     let playerDisposeBag = playerDisposeBag else { return }
@@ -153,6 +149,10 @@ public final class VideoPlayerFactory: VideoPlayerFactoryType {
         return playerItem.asset.rx.isPlayable
             .filter { $0 }
             .take(1)
+
+            /// NOTE: KVO should be registerd from main-thread
+            ///   https://developer.apple.com/documentation/avfoundation/avplayer
+            .observeOn(ConcurrentMainScheduler.instance)
 
             // NOTE: strongly captures self
             //   VideoPlayerFactory is deallocated right after makeVideoPlayer is called,
