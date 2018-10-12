@@ -11,6 +11,7 @@ targets:
     type: application
     sources:
       - Example/
+      - Exclude/
     dependencies:
       - carthage: RxCocoa
       - carthage: RxSwift

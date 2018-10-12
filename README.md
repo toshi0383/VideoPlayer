@@ -14,19 +14,29 @@ VideoPlayer
 
 # Usage
 ## Initializing AVPlayer
-Observe `VideoPlayer.player: Single<AVPlayer>` to get created AVPlayer immediately after initialization.
+Observe `VideoPlayer.player: Single<AVPlayer>` to get AVPlayer instance.
 
 See: [Example](Example/)
 
 ## Monitor and Control state
-TBD
 
 See: [Example](Example/)
+
+## Encrypted contents
+
+`VideoPlayerFactory` initializer accepts `AVAssetResourceLoaderDelegate`.
+Set your instance which handles `EXT-X-KEY` methods.
 
 ## Handling Errors
 TBD
 
 See: [Example](Example/)
+
+## Testing
+
+See: [VideoPlayerTests](VideoPlayerTests/)
+
+You can simulate player behavior by yourself to improve test coverage of your app.
 
 # Build Example
 1. Make sure your default `xcode-select -p` points at correct Xcode version.
