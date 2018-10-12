@@ -153,9 +153,13 @@ public final class VideoPlayerFactory: VideoPlayerFactoryType {
         return playerItem.asset.rx.isPlayable
             .filter { $0 }
             .take(1)
-            .map { [weak self] _ in
+
+            // NOTE: strongly captures self
+            //   VideoPlayerFactory is deallocated right after makeVideoPlayer is called,
+            //   therefore self would be nil if it's a weak ref.
+            .map { _ in
                 AVPlayerWrapper(playerItem: playerItem,
-                                enableAirPlay: self?.configuration.enableAirPlay ?? false,
+                                enableAirPlay: self.configuration.enableAirPlay,
                                 playerDisposeBag: playerDisposeBag)
             }
     }
