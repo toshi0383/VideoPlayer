@@ -95,6 +95,7 @@ extension ViewController {
 
         // MARK: Layout: volumeView
         volumeView.translatesAutoresizingMaskIntoConstraints = false
+        volumeView.showsVolumeSlider = false
         view.addSubview(volumeView)
 
         NSLayoutConstraint.activate([
