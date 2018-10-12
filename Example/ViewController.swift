@@ -16,6 +16,7 @@ final class ViewController: UIViewController {
 
     private let playerView: PlayerView
     private let monitorView: VideoPlayerMonitorView
+    private let stackView: UIStackView
     private let rateButton: RateButton
     private let volumeView: MPVolumeView
     private let reloadButton: UIButton
@@ -25,6 +26,7 @@ final class ViewController: UIViewController {
     init() {
         playerView = PlayerView()
         monitorView = VideoPlayerMonitorView()
+        stackView = UIStackView(arrangedSubviews: [])
         rateButton = RateButton.make()
         reloadButton = UIButton(type: .system)
         toggleMonitorButton = UIButton(type: .system)
@@ -67,57 +69,49 @@ extension ViewController {
             playerView.widthAnchor.constraint(equalTo: monitorView.widthAnchor),
         ])
 
+        // MARK: Layout: stackView
+
+        stackView.translatesAutoresizingMaskIntoConstraints = false
+        stackView.axis = .horizontal
+        stackView.alignment = .center
+        stackView.distribution = .equalSpacing
+        stackView.spacing = 10
+        view.addSubview(stackView)
+
+        NSLayoutConstraint.activate([
+            view.bottomAnchor.constraint(equalTo: stackView.bottomAnchor, constant: 20),
+            stackView.widthAnchor.constraint(lessThanOrEqualTo: view.widthAnchor),
+            view.centerXAnchor.constraint(equalTo: stackView.centerXAnchor, constant: 10),
+        ])
+
         // MARK: Layout: rateButton
 
         rateButton.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(rateButton)
-
-        NSLayoutConstraint.activate([
-            view.bottomAnchor.constraint(equalTo: rateButton.bottomAnchor, constant: 20),
-            view.trailingAnchor.constraint(equalTo: rateButton.trailingAnchor, constant: 10),
-            rateButton.widthAnchor.constraint(equalToConstant: 70),
-            rateButton.heightAnchor.constraint(equalToConstant: 50),
-        ])
+        stackView.addArrangedSubview(rateButton)
 
         // MARK: Layout: reloadButton
 
         reloadButton.backgroundColor = .lightGray
         reloadButton.setTitle("reload", for: .normal)
         reloadButton.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(reloadButton)
-
-        NSLayoutConstraint.activate([
-            view.bottomAnchor.constraint(equalTo: reloadButton.bottomAnchor, constant: 20),
-            rateButton.leadingAnchor.constraint(equalTo: reloadButton.trailingAnchor, constant: 10),
-            reloadButton.widthAnchor.constraint(equalToConstant: 70),
-            reloadButton.heightAnchor.constraint(equalToConstant: 50),
-        ])
+        stackView.addArrangedSubview(reloadButton)
 
         // MARK: Layout: volumeView
         volumeView.translatesAutoresizingMaskIntoConstraints = false
         volumeView.showsVolumeSlider = false
-        view.addSubview(volumeView)
+        stackView.addArrangedSubview(volumeView)
 
         NSLayoutConstraint.activate([
-            view.bottomAnchor.constraint(equalTo: volumeView.bottomAnchor, constant: 20),
-            reloadButton.leadingAnchor.constraint(equalTo: volumeView.trailingAnchor, constant: 10),
             volumeView.widthAnchor.constraint(equalToConstant: 70),
             volumeView.heightAnchor.constraint(equalToConstant: 50),
         ])
 
-        // MARK: Layout: reloadButton
+        // MARK: Layout: toggleMonitorButton
 
         toggleMonitorButton.backgroundColor = .lightGray
         toggleMonitorButton.setTitle("monitor", for: .normal)
         toggleMonitorButton.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(toggleMonitorButton)
-
-        NSLayoutConstraint.activate([
-            view.bottomAnchor.constraint(equalTo: toggleMonitorButton.bottomAnchor, constant: 20),
-            volumeView.leadingAnchor.constraint(equalTo: toggleMonitorButton.trailingAnchor, constant: 10),
-            toggleMonitorButton.widthAnchor.constraint(equalToConstant: 70),
-            toggleMonitorButton.heightAnchor.constraint(equalToConstant: 50),
-        ])
+        stackView.addArrangedSubview(toggleMonitorButton)
 
         toggleMonitorButton.rx.tap
             .subscribe(onNext: { [weak self] _ in
