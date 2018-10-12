@@ -62,13 +62,13 @@ extension ViewController {
         verticalStackView.axis = .vertical
         verticalStackView.alignment = .fill
         verticalStackView.distribution = .equalSpacing
-        verticalStackView.spacing = 8
+        verticalStackView.spacing = 4
         view.addSubview(verticalStackView)
 
         NSLayoutConstraint.activate([
             view.bottomAnchor.constraint(equalTo: verticalStackView.bottomAnchor, constant: 20),
-            verticalStackView.widthAnchor.constraint(lessThanOrEqualTo: view.widthAnchor),
-            view.centerXAnchor.constraint(equalTo: verticalStackView.centerXAnchor, constant: 10),
+            verticalStackView.widthAnchor.constraint(equalTo: view.widthAnchor),
+            view.leadingAnchor.constraint(equalTo: verticalStackView.leadingAnchor),
         ])
 
         // MARK: Layout: seekBarView
