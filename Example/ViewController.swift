@@ -28,9 +28,9 @@ final class ViewController: UIViewController {
         monitorView = VideoPlayerMonitorView()
         stackView = UIStackView(arrangedSubviews: [])
         rateButton = RateButton.make()
+        volumeView = MPVolumeView()
         reloadButton = UIButton(type: .system)
         toggleMonitorButton = UIButton(type: .system)
-        volumeView = MPVolumeView()
 
         super.init(nibName: nil, bundle: nil)
     }
@@ -144,12 +144,5 @@ extension ViewController {
         print("volumeView.isWirelessRouteActive: \(volumeView.isWirelessRouteActive)")
         print("volumeView.areWirelessRoutesAvailable: \(volumeView.areWirelessRoutesAvailable)")
 
-        let nc = NotificationCenter.default
-        _ = nc.rx.notification(.MPVolumeViewWirelessRoutesAvailableDidChange)
-            .debug("[MPVolumeViewWirelessRoutesAvailableDidChange]")
-            .subscribe()
-        _ = nc.rx.notification(.MPVolumeViewWirelessRouteActiveDidChange)
-            .debug("[MPVolumeViewWirelessRouteActiveDidChange]")
-            .subscribe()
     }
 }

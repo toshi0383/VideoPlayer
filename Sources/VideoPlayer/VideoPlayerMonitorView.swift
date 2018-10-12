@@ -1,9 +1,12 @@
 import AVFoundation
+import MediaPlayer
 import RxCocoa
 import RxSwift
 
 /// A transparent view which displays infomations from VideoPlayerMonitor.
 public class VideoPlayerMonitorView: UIView {
+
+    var enableDebugInfo = true
 
     private let textView = UITextView()
     private var monitorDisposeBag = DisposeBag()
@@ -13,10 +16,42 @@ public class VideoPlayerMonitorView: UIView {
             monitorDisposeBag = DisposeBag()
             textView.text = nil
 
-            monitor?.consoleString
+            guard let monitor = monitor else { return }
+
+            Observable
+                .combineLatest(monitor.consoleString, debugInfo.startWith(""))
+                .map(joined(separator: "\n"))
                 .bind(to: textView.rx.text)
                 .disposed(by: monitorDisposeBag)
+
         }
+    }
+
+    private var debugInfo: Observable<String> {
+        let nc = NotificationCenter.default
+
+        return Observable
+            .combineLatest(
+                nc.rx.notification(.MPVolumeViewWirelessRoutesAvailableDidChange)
+                    .map { ($0.object as! MPVolumeView).areWirelessRoutesAvailable }
+                    .map { "\($0)" }
+                    .startWith("")
+                    .map { "MPVolumeView.areWirelessRoutesAvailable: \($0)" },
+
+                nc.rx.notification(.MPVolumeViewWirelessRouteActiveDidChange)
+                    .map { ($0.object as! MPVolumeView).isWirelessRouteActive }
+                    .map { "\($0)" }
+                    .startWith("")
+                    .map { "MPVolumeView.isWirelessRouteActive: \($0)" },
+
+                nc.rx.notification(.AVAudioSessionRouteChange)
+                    .map { ($0.object as! AVAudioSession).currentRoute.outputs.map { o in "o.portType: \(o.portType), o: \(o)" } }
+                    .map { $0.description }
+                    .startWith("")
+            )
+            .filter { [unowned self] _ in self.enableDebugInfo }
+            .map(joined(separator: "\n"))
+            .share(replay: 1, scope: .whileConnected)
     }
 
     public override func didMoveToSuperview() {
@@ -39,5 +74,23 @@ public class VideoPlayerMonitorView: UIView {
             heightAnchor.constraint(equalTo: textView.heightAnchor),
             widthAnchor.constraint(equalTo: textView.widthAnchor),
         ])
+    }
+}
+
+extension Array where Element == String {
+    func joinNonEmpty(separator: String) -> String {
+        return compactMap { s in !s.isEmpty ? s : nil }.joined(separator: separator)
+    }
+}
+
+func joined(separator: String) -> (String, String) -> String {
+    return {
+        [$0, $1].joinNonEmpty(separator: separator)
+    }
+}
+
+func joined(separator: String) -> (String, String, String) -> String {
+    return {
+        [$0, $1, $2].joinNonEmpty(separator: separator)
     }
 }
