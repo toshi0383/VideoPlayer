@@ -53,7 +53,7 @@ public final class VideoPlayer {
                 let stream = videoPlayer.stream
 
                 stream.rate
-                    .bind(to: monitor.rate)
+                    .bind(to: monitor._rate)
                     .disposed(by: playerDisposeBag)
 
                 Observable.combineLatest(stream.playerItemStatus, control.setRate)
@@ -62,8 +62,12 @@ public final class VideoPlayer {
                     .bind(to: stream.setRate)
                     .disposed(by: playerDisposeBag)
 
+                stream.isExternalPlaybackActive
+                    .bind(to: monitor._isAirPlaying)
+                    .disposed(by: playerDisposeBag)
+
                 stream.isPlayerSeeking
-                    .bind(to: monitor.isPlayerSeeking)
+                    .bind(to: monitor._isPlayerSeeking)
                     .disposed(by: playerDisposeBag)
 
                 let isPlayable = stream.isPlayable
@@ -213,6 +217,7 @@ public final class AVPlayerWrapper: AVPlayerWrapperType {
                                         timedMetadata: playerItem.rx.timedMetadata,
                                         currentTime: currentTime(),
                                         rate: player.rx.rate,
+                                        isExternalPlaybackActive: player.rx.isExternalPlaybackActive,
                                         setPreferredPeakBitrate: { [weak playerItem] bitrate in
                                             playerItem?.preferredPeakBitRate = bitrate
                                         },
@@ -254,15 +259,26 @@ public final class VideoPlayerMonitor {
 
     /// NOTE: Does not `replay`.
     ///   AVPlayer.rate is also updated by the SDK.
-    public let rate = PublishRelay<Float>()
+    public let rate: Observable<Float>
+    public let isPlayerSeeking: Observable<Bool>
+    public let isAirPlaying: Observable<Bool>
 
-    public let isPlayerSeeking = BehaviorRelay<Bool>(value: false)
+    internal let _rate = PublishRelay<Float>()
+    internal let _isPlayerSeeking = BehaviorRelay<Bool>(value: false)
+    internal let _isAirPlaying = BehaviorRelay<Bool>(value: false)
+
+    internal init() {
+        rate = _rate.asObservable()
+        isPlayerSeeking = _isPlayerSeeking.asObservable()
+        isAirPlaying = _isAirPlaying.asObservable()
+    }
 
     internal var consoleString: Observable<String> {
         return Observable
             .combineLatest(rate.map { "rate: \($0)" },
-                           isPlayerSeeking.map { "isPlayerSeeking: \($0)" })
-            .map { [$0, $1].joined(separator: "\n") }
+                           isPlayerSeeking.map { "isPlayerSeeking: \($0)" },
+                           isAirPlaying.map { "isAirPlaying: \($0)" })
+            .map { [$0, $1, $2].joined(separator: "\n") }
     }
 }
 

@@ -19,6 +19,7 @@ public final class VideoPlayerStream {
     // MARK: stream => monitor (or internal state check)
 
     let rate: Observable<Float>
+    let isExternalPlaybackActive: Observable<Bool>
     let playerItemStatus: Observable<AVPlayerItem.Status>
     let currentTime: Observable<CMTime>
     let isPlayable: Observable<Bool>
@@ -38,6 +39,7 @@ public final class VideoPlayerStream {
                 timedMetadata: Observable<[AVMetadataItem]>,
                 currentTime: Observable<CMTime>,
                 rate: Observable<Float>,
+                isExternalPlaybackActive: Observable<Bool>,
                 setPreferredPeakBitrate: @escaping (Double) -> Void,
                 setVolume: @escaping (Float) -> Void,
                 seekTo: @escaping (CMTime) -> Observable<Bool>,
@@ -48,6 +50,7 @@ public final class VideoPlayerStream {
         ) {
         self.isPlayable = isPlayable
         self.rate = rate
+        self.isExternalPlaybackActive = isExternalPlaybackActive
         self.playerItemStatus = playerItemStatus
         self.seekableTimeRanges = seekableTimeRanges
         self.currentTime = currentTime
@@ -65,6 +68,5 @@ public final class VideoPlayerStream {
         self.setPreferredPeakBitrate
             .subscribe(onNext: { setPreferredPeakBitrate($0) })
             .disposed(by: playerDisposeBag)
-
     }
 }

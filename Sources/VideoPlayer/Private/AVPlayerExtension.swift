@@ -40,4 +40,10 @@ extension Reactive where Base: AVPlayer {
             }
         }
     }
+
+    var isExternalPlaybackActive: Observable<Bool> {
+        return base.rx.observe(Bool.self, #keyPath(AVPlayer.isExternalPlaybackActive))
+            .filterNil()
+            .subscribeOn(ConcurrentMainScheduler.instance)
+    }
 }
