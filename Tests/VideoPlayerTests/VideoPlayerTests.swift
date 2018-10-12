@@ -88,7 +88,9 @@ extension VideoPlayerTests {
         let factory: MockVideoPlayerFactory
 
         let playerRate = PublishRelay<Float>()
+        let isExternalPlaybackActive = PublishRelay<Bool>()
         let playerItemStatus = PublishRelay<AVPlayerItem.Status>()
+        var playerDisposeBag = DisposeBag()
 
         init() {
             control = VideoPlayerControl()
@@ -99,12 +101,14 @@ extension VideoPlayerTests {
                                        timedMetadata: .empty(),
                                        currentTime: .empty(),
                                        rate: playerRate.asObservable(),
+                                       isExternalPlaybackActive: isExternalPlaybackActive.asObservable(),
                                        setPreferredPeakBitrate: { _ in },
                                        setVolume: { _ in },
                                        seekTo: { _ in .empty() },
                                        setRate: { _ in },
                                        didPlayToEndTime: .empty(),
-                                       playerError: .empty())
+                                       playerError: .empty(),
+                                       playerDisposeBag: playerDisposeBag)
 
             factory = MockVideoPlayerFactory(stream: stream)
             player = VideoPlayer(url: url,

@@ -14,7 +14,7 @@ public final class MockVideoPlayerFactory: VideoPlayerFactoryType {
         self.stream = stream
     }
 
-    public func makeVideoPlayer(_ playerItem: AVPlayerItem) -> Observable<AVPlayerWrapperType> {
+    public func makeVideoPlayer(_ playerItem: AVPlayerItem, playerDisposeBag: DisposeBag) -> Observable<AVPlayerWrapperType> {
         return .just(MockVideoPlayer(player: player, stream: stream))
     }
 }
