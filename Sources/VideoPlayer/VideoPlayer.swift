@@ -283,16 +283,16 @@ public final class VideoPlayerMonitor {
     /// .share(replay:1, scope: .forever)
     public let duration: Observable<CMTime>
 
-    internal let _rate = PublishRelay<Float?>()
-    internal let _isPlayerSeeking = PublishRelay<Bool>()
-    internal let _isAirPlaying = PublishRelay<Bool>()
-    internal let _duration = PublishRelay<CMTime?>()
+    internal let _rate = BehaviorRelay<Float?>(value: nil)
+    internal let _isPlayerSeeking = BehaviorRelay<Bool>(value: false)
+    internal let _isAirPlaying = BehaviorRelay<Bool>(value: false)
+    internal let _duration = BehaviorRelay<CMTime?>(value: nil)
 
     internal init() {
-        rate = _rate.filterNil().share(replay: 1, scope: .forever)
-        duration = _duration.filterNil().share(replay: 1, scope: .forever)
-        isPlayerSeeking = _isPlayerSeeking.share(replay: 1, scope: .forever)
-        isAirPlaying = _isAirPlaying.share(replay: 1, scope: .forever)
+        rate = _rate.filterNil()
+        duration = _duration.filterNil()
+        isPlayerSeeking = _isPlayerSeeking.asObservable()
+        isAirPlaying = _isAirPlaying.asObservable()
     }
 
     internal var consoleString: Observable<String> {
