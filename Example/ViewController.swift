@@ -11,33 +11,20 @@ final class ViewController: UIViewController {
         return ViewModel(requestRate: self.rateButton.nextRate.map { $0.rawValue },
                          requestReloadWithEnableAirPlay: self.reloadButton.rx.tap
                             .map { true }
-                            .throttle(1.0, scheduler: ConcurrentMainScheduler.instance))
+                            .throttle(1.0, scheduler: ConcurrentMainScheduler.instance),
+                         requestSeekTo: self.seekBarView.slider.rx.value.asObservable())
     }()
 
-    private let playerView: PlayerView
-    private let monitorView: VideoPlayerMonitorView
-    private let stackView: UIStackView
-    private let rateButton: RateButton
-    private let volumeView: MPVolumeView
-    private let reloadButton: UIButton
-    private let toggleMonitorButton: UIButton
+    private let playerView = PlayerView()
+    private let seekBarView = SeekBarView()
+    private let monitorView = VideoPlayerMonitorView()
+    private let stackView = UIStackView()
+    private let verticalStackView = UIStackView()
+    private let rateButton = RateButton.make()
+    private let volumeView = MPVolumeView()
+    private let reloadButton = UIButton(type: .system)
+    private let toggleMonitorButton = UIButton(type: .system)
     private let disposeBag = DisposeBag()
-
-    init() {
-        playerView = PlayerView()
-        monitorView = VideoPlayerMonitorView()
-        stackView = UIStackView(arrangedSubviews: [])
-        rateButton = RateButton.make()
-        volumeView = MPVolumeView()
-        reloadButton = UIButton(type: .system)
-        toggleMonitorButton = UIButton(type: .system)
-
-        super.init(nibName: nil, bundle: nil)
-    }
-
-    required init?(coder aDecoder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
-    }
 }
 
 extension ViewController {
@@ -60,14 +47,34 @@ extension ViewController {
         // MARK: Layout: monitorView
 
         monitorView.translatesAutoresizingMaskIntoConstraints = false
-        playerView.addSubview(monitorView)
+        view.addSubview(monitorView)
 
         NSLayoutConstraint.activate([
-            playerView.topAnchor.constraint(equalTo: monitorView.topAnchor),
-            playerView.leadingAnchor.constraint(equalTo: monitorView.leadingAnchor),
-            playerView.heightAnchor.constraint(equalTo: monitorView.heightAnchor),
-            playerView.widthAnchor.constraint(equalTo: monitorView.widthAnchor),
+            view.topAnchor.constraint(equalTo: monitorView.topAnchor),
+            view.leadingAnchor.constraint(equalTo: monitorView.leadingAnchor),
+            view.heightAnchor.constraint(equalTo: monitorView.heightAnchor),
+            view.widthAnchor.constraint(equalTo: monitorView.widthAnchor),
         ])
+
+        // MARK: Layout: verticalStackView
+
+        verticalStackView.translatesAutoresizingMaskIntoConstraints = false
+        verticalStackView.axis = .vertical
+        verticalStackView.alignment = .fill
+        verticalStackView.distribution = .equalSpacing
+        verticalStackView.spacing = 8
+        view.addSubview(verticalStackView)
+
+        NSLayoutConstraint.activate([
+            view.bottomAnchor.constraint(equalTo: verticalStackView.bottomAnchor, constant: 20),
+            verticalStackView.widthAnchor.constraint(lessThanOrEqualTo: view.widthAnchor),
+            view.centerXAnchor.constraint(equalTo: verticalStackView.centerXAnchor, constant: 10),
+        ])
+
+        // MARK: Layout: seekBarView
+
+        seekBarView.translatesAutoresizingMaskIntoConstraints = false
+        verticalStackView.addArrangedSubview(seekBarView)
 
         // MARK: Layout: stackView
 
@@ -76,13 +83,7 @@ extension ViewController {
         stackView.alignment = .center
         stackView.distribution = .equalSpacing
         stackView.spacing = 10
-        view.addSubview(stackView)
-
-        NSLayoutConstraint.activate([
-            view.bottomAnchor.constraint(equalTo: stackView.bottomAnchor, constant: 20),
-            stackView.widthAnchor.constraint(lessThanOrEqualTo: view.widthAnchor),
-            view.centerXAnchor.constraint(equalTo: stackView.centerXAnchor, constant: 10),
-        ])
+        verticalStackView.addArrangedSubview(stackView)
 
         // MARK: Layout: rateButton
 
@@ -131,7 +132,33 @@ extension ViewController {
                 guard let me = self else { return }
 
                 me.playerView.playerLayer.player = player
-                me.monitorView.monitor = me.viewModel.monitor
+
+                guard let monitor = me.viewModel.monitor else { return }
+
+                me.monitorView.monitor = monitor
+
+                let duration = monitor.duration
+                    .map { $0.seconds }
+                    .share()
+                    .observeOn(ConcurrentMainScheduler.instance)
+
+                duration
+                    .map { time in
+                        let hour = Int(time / (60 * 60))
+                        let minutes = Int((time / 60).truncatingRemainder(dividingBy: 60))
+                        let second = Int(time.truncatingRemainder(dividingBy: 60))
+                        let hourText = hour > 0 ? "\(String(format: "%02d", hour)):" : ""
+                        return "\(hourText)\(String(format: "%02d", minutes)):\(String(format: "%02d", second))"
+                    }
+                    .bind(to: me.seekBarView.totalTimeLabel.rx.text)
+                    .disposed(by: me.disposeBag)
+
+                duration
+                    .subscribe(onNext: { [weak self] duration in
+                        self?.seekBarView.slider.maximumValue = Float(duration)
+                        self?.seekBarView.slider.value = 0
+                    })
+                    .disposed(by: me.disposeBag)
             })
             .disposed(by: disposeBag)
 

@@ -62,7 +62,7 @@ public final class VideoPlayer {
                     .bind(to: monitor._isAirPlaying)
                     .disposed(by: playerDisposeBag)
 
-                stream.isPlayerSeeking
+                stream.isSeeking
                     .bind(to: monitor._isPlayerSeeking)
                     .disposed(by: playerDisposeBag)
 
@@ -95,10 +95,20 @@ public final class VideoPlayer {
                     .distinctUntilChanged()
                     .share(replay: 1)
 
-                #warning("FIXME: assetDuration for VOD contents")
                 let duration = endPosition.share(replay: 1, scope: .whileConnected)
 
-                #warning("FIXME: not necessary for LIVE contents")
+                duration
+                    .bind(to: monitor._duration)
+                    .disposed(by: playerDisposeBag)
+
+                _ = endPosition.map { $0.seconds }
+                    .debug("[endPosition]")
+                    .subscribe()
+
+                _ = stream.assetDuration.map { $0.seconds }
+                    .debug("[assetDuration]")
+                    .subscribe()
+
                 Observable.combineLatest(isSeekable, control.seekTo.asObservable())
                     .map { $0.0 ? $0.1 : nil }
                     .filterNil()
@@ -147,6 +157,7 @@ public final class VideoPlayerFactory: VideoPlayerFactoryType {
         }
 
         return playerItem.asset.rx.isPlayable
+            .debug("[asset.rx.isPlayable]")
             .filter { $0 }
             .take(1)
 
@@ -230,20 +241,19 @@ public final class AVPlayerWrapper: AVPlayerWrapperType {
                                         },
                                         seekTo: { seekTo -> Observable<Bool> in
                                             return Observable.create { [weak playerItem] observer in
-                                                playerItem?.seek(to: seekTo, toleranceBefore: kCMTimeZero, toleranceAfter: kCMTimeZero, completionHandler: { finished in
+                                                observer.onNext(true)
+                                                playerItem?.seek(to: seekTo, toleranceBefore: kCMTimeZero, toleranceAfter: kCMTimeZero, completionHandler: { _ in
 
                                                     // Note:
                                                     //   We don't know if `finished: false` means that either
                                                     //   current seek is cancelled or being interrupted by other seek.
 
-                                                    observer.onNext(finished)
+                                                    observer.onNext(false)
                                                     observer.onCompleted()
                                                 })
 
                                                 return Disposables.create()
                                             }
-                                            .startWith(true)
-                                            .map { _ in false }
                                         },
                                         setRate: { [weak player] rate in
                                             player?.rate = rate
@@ -261,20 +271,28 @@ public final class AVPlayerWrapper: AVPlayerWrapperType {
 /// Player Monitor
 public final class VideoPlayerMonitor {
 
-    /// NOTE: Does not `replay`.
-    ///   AVPlayer.rate is also updated by the SDK.
+    /// .share(replay:1, scope: .forever)
     public let rate: Observable<Float>
+
+    /// .share(replay:1, scope: .forever)
     public let isPlayerSeeking: Observable<Bool>
+
+    /// .share(replay:1, scope: .forever)
     public let isAirPlaying: Observable<Bool>
 
-    internal let _rate = PublishRelay<Float>()
-    internal let _isPlayerSeeking = BehaviorRelay<Bool>(value: false)
-    internal let _isAirPlaying = BehaviorRelay<Bool>(value: false)
+    /// .share(replay:1, scope: .forever)
+    public let duration: Observable<CMTime>
+
+    internal let _rate = PublishRelay<Float?>()
+    internal let _isPlayerSeeking = PublishRelay<Bool>()
+    internal let _isAirPlaying = PublishRelay<Bool>()
+    internal let _duration = PublishRelay<CMTime?>()
 
     internal init() {
-        rate = _rate.asObservable()
-        isPlayerSeeking = _isPlayerSeeking.asObservable()
-        isAirPlaying = _isAirPlaying.asObservable()
+        rate = _rate.filterNil().share(replay: 1, scope: .forever)
+        duration = _duration.filterNil().share(replay: 1, scope: .forever)
+        isPlayerSeeking = _isPlayerSeeking.share(replay: 1, scope: .forever)
+        isAirPlaying = _isAirPlaying.share(replay: 1, scope: .forever)
     }
 
     internal var consoleString: Observable<String> {

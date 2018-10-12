@@ -11,12 +11,12 @@ final class ViewModel {
     private let _rateButtonRate = BehaviorRelay<RateButton.Rate>(value: .x1_0)
 
     // VOD
-//    private let url = URL(string: "https://devstreaming-cdn.apple.com/videos/wwdc/2018/507axjplrd0yjzixfz/507/0640/0640.m3u8")!
+    private let url = URL(string: "https://devstreaming-cdn.apple.com/videos/wwdc/2018/507axjplrd0yjzixfz/507/0640/0640.m3u8")!
 
     /// LIVE
     ///
     /// See: https://azure.microsoft.com/en-us/blog/live-247-reference-streams-available/
-    private let url = URL(string: "http://b028.wpc.azureedge.net/80B028/Samples/a38e6323-95e9-4f1f-9b38-75eba91704e4/5f2ce531-d508-49fb-8152-647eba422aec.ism/Manifest(format=m3u8-aapl)")!
+//    private let url = URL(string: "http://b028.wpc.azureedge.net/80B028/Samples/a38e6323-95e9-4f1f-9b38-75eba91704e4/5f2ce531-d508-49fb-8152-647eba422aec.ism/Manifest(format=m3u8-aapl)")!
 
     private var player: VideoPlayer! {
         didSet {
@@ -31,6 +31,7 @@ final class ViewModel {
 
     init(requestRate: Observable<Float>,
          requestReloadWithEnableAirPlay: Observable<Bool>,
+         requestSeekTo: Observable<Float>,
          videoPlayerFactory: VideoPlayerFactoryType? = nil) {
 
         rateButtonRate = Property(_rateButtonRate)
@@ -47,6 +48,11 @@ final class ViewModel {
             .filter { !$1 }
             .map { $0.0 }
             .bind(to: control.setRate)
+            .disposed(by: disposeBag)
+
+        requestSeekTo
+            .map { CMTime(seconds: Double($0), preferredTimescale: 1) }
+            .bind(to: control.seekTo)
             .disposed(by: disposeBag)
 
         requestReloadWithEnableAirPlay

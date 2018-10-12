@@ -62,8 +62,8 @@ public class VideoPlayerMonitorView: UIView {
             return
         }
 
-        textView.isEditable = false
         textView.translatesAutoresizingMaskIntoConstraints = false
+        textView.isEditable = false
         textView.backgroundColor = UIColor(red: 0.0, green: 0.0, blue: 0.0, alpha: 0.5)
         textView.textColor = .white
         addSubview(textView)

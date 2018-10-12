@@ -23,15 +23,12 @@ public final class VideoPlayerStream {
     let playerItemStatus: Observable<AVPlayerItem.Status>
     let currentTime: Observable<CMTime>
     let isPlayable: Observable<Bool>
+    let assetDuration: Observable<CMTime>
     let seekableTimeRanges: Observable<[NSValue]>
     let playerError: Observable<PlayerItemError>
     let didPlayToEndTime: Observable<Void>
+    let isSeeking: Observable<Bool>
 
-    // MARK: player => stream
-
-    let isPlayerSeeking = PublishRelay<Bool>()
-
-    /// - parameter seekTo: Seek player
     public init(isPlayable: Observable<Bool>,
                 assetDuration: Observable<CMTime>,
                 playerItemStatus: Observable<AVPlayerItem.Status>,
@@ -49,6 +46,7 @@ public final class VideoPlayerStream {
                 playerDisposeBag: DisposeBag
         ) {
         self.isPlayable = isPlayable
+        self.assetDuration = assetDuration
         self.rate = rate
         self.isExternalPlaybackActive = isExternalPlaybackActive
         self.playerItemStatus = playerItemStatus
@@ -67,6 +65,13 @@ public final class VideoPlayerStream {
 
         self.setPreferredPeakBitrate
             .subscribe(onNext: { setPreferredPeakBitrate($0) })
+            .disposed(by: playerDisposeBag)
+
+        self.isSeeking = self.requestSeekTo
+            .flatMapLatest { seekTo($0) }
+
+        self.isSeeking
+            .subscribe()
             .disposed(by: playerDisposeBag)
     }
 }
