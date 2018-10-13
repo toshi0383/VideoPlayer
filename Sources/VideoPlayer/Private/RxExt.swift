@@ -21,5 +21,10 @@ extension ObservableType where E: OptionalType {
             }
         }
     }
+}
 
+extension ObservableType {
+    func withLatest<SecondO: ObservableConvertibleType>(from observable: SecondO) -> Observable<(E, SecondO.E)> {
+        return withLatestFrom(observable) { ($0, $1) }
+    }
 }

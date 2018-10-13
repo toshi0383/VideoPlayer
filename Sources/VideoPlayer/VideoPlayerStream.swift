@@ -22,6 +22,7 @@ public final class VideoPlayerStream {
     let isExternalPlaybackActive: Observable<Bool>
     let playerItemStatus: Observable<AVPlayerItem.Status>
     let currentTime: Observable<CMTime>
+    let periodicTime: Observable<CMTime>
     let isPlayable: Observable<Bool>
     let assetDuration: Observable<CMTime>
     let seekableTimeRanges: Observable<[NSValue]>
@@ -35,6 +36,7 @@ public final class VideoPlayerStream {
                 seekableTimeRanges: Observable<[NSValue]>,
                 timedMetadata: Observable<[AVMetadataItem]>,
                 currentTime: Observable<CMTime>,
+                periodicTime: Observable<CMTime>,
                 rate: Observable<Float>,
                 isExternalPlaybackActive: Observable<Bool>,
                 setPreferredPeakBitrate: @escaping (Double) -> Void,
@@ -52,6 +54,7 @@ public final class VideoPlayerStream {
         self.playerItemStatus = playerItemStatus
         self.seekableTimeRanges = seekableTimeRanges
         self.currentTime = currentTime
+        self.periodicTime = periodicTime
         self.didPlayToEndTime = didPlayToEndTime
         self.playerError = playerError
 

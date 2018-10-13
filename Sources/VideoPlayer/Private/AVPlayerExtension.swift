@@ -21,7 +21,9 @@ extension Reactive where Base: AVPlayer {
     }
 
     /// - Note: via `AVPlayer.addPeriodicTimeObserver`
-    func periodicTime(for interval: CMTime, queue: DispatchQueue = DispatchQueue.global(qos: .default)) -> Observable<CMTime> {
+    /// - queue: !!IMPORTANT NOTE!!
+    ///   > A serial dispatch queue onto which block should be enqueued. Passing a concurrent queue is not supported and will result in undefined behavior.
+    func periodicTime(for interval: CMTime, queue: DispatchQueue = .main) -> Observable<CMTime> {
         return Observable.create { observer in
             let avTimeObserver = self.base.addPeriodicTimeObserver(forInterval: interval, queue: queue) { [observer] time  in
                 observer.onNext(time)

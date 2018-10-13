@@ -95,6 +95,13 @@ public final class VideoPlayer {
                     .distinctUntilChanged()
                     .share(replay: 1)
 
+                stream.periodicTime
+                    .withLatest(from: stream.isSeeking)
+                    .filter { !$1 }
+                    .map { $0.0 }
+                    .bind(to: monitor._periodicTime)
+                    .disposed(by: playerDisposeBag)
+
                 let duration = endPosition.share(replay: 1, scope: .whileConnected)
 
                 duration
@@ -231,6 +238,7 @@ public final class AVPlayerWrapper: AVPlayerWrapperType {
                                         seekableTimeRanges: playerItem.rx.seekableTimeRanges,
                                         timedMetadata: playerItem.rx.timedMetadata,
                                         currentTime: currentTime(),
+                                        periodicTime: player.rx.periodicTime(for: CMTime(seconds: 1, preferredTimescale: CMTimeScale(NSEC_PER_SEC))),
                                         rate: player.rx.rate,
                                         isExternalPlaybackActive: player.rx.isExternalPlaybackActive,
                                         setPreferredPeakBitrate: { [weak playerItem] bitrate in
@@ -281,16 +289,21 @@ public final class VideoPlayerMonitor {
     public let isAirPlaying: Observable<Bool>
 
     /// .share(replay:1, scope: .forever)
+    public let periodicTime: Observable<CMTime>
+
+    /// .share(replay:1, scope: .forever)
     public let duration: Observable<CMTime>
 
     internal let _rate = BehaviorRelay<Float?>(value: nil)
     internal let _isPlayerSeeking = BehaviorRelay<Bool>(value: false)
     internal let _isAirPlaying = BehaviorRelay<Bool>(value: false)
     internal let _duration = BehaviorRelay<CMTime?>(value: nil)
+    internal let _periodicTime = BehaviorRelay<CMTime?>(value: nil)
 
     internal init() {
         rate = _rate.filterNil()
         duration = _duration.filterNil()
+        periodicTime = _periodicTime.filterNil()
         isPlayerSeeking = _isPlayerSeeking.asObservable()
         isAirPlaying = _isAirPlaying.asObservable()
     }
@@ -312,7 +325,7 @@ public final class VideoPlayerControl {
     public let seekTo: BehaviorRelay<CMTime>
 
     /// - parameter rate: set 0.0 if you prefer player to be paused initially.
-    /// - parameter seekTO: initial seek position to start playback
+    /// - parameter seekTo: initial seek position to start playback
     public init(rate: Float = 1.0,
                 seekTo: CMTime = CMTime(seconds: 0, preferredTimescale: 1)) {
         self.setRate = BehaviorRelay(value: rate)

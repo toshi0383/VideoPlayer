@@ -139,10 +139,30 @@ extension ViewController {
 
                 me.monitorView.monitor = monitor
 
+                let periodicTime = monitor.periodicTime
+                    .map { Float($0.seconds) }
+                    .observeOn(ConcurrentMainScheduler.instance)
+                    .share()
+
+                periodicTime
+                    .bind(to: me.seekBarView.slider.rx.value)
+                    .disposed(by: me.disposeBag)
+
+                periodicTime
+                    .map { time in
+                        let hour = Int(time / (60 * 60))
+                        let minutes = Int((time / 60).truncatingRemainder(dividingBy: 60))
+                        let second = Int(time.truncatingRemainder(dividingBy: 60))
+                        let hourText = hour > 0 ? "\(String(format: "%02d", hour)):" : ""
+                        return "\(hourText)\(String(format: "%02d", minutes)):\(String(format: "%02d", second))"
+                    }
+                    .bind(to: me.seekBarView.currentTimeLabel.rx.text)
+                    .disposed(by: me.disposeBag)
+
                 let duration = monitor.duration
                     .map { $0.seconds }
-                    .share()
                     .observeOn(ConcurrentMainScheduler.instance)
+                    .share()
 
                 duration
                     .map { time in
