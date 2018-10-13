@@ -12,7 +12,9 @@ final class ViewController: UIViewController {
                          requestReloadWithEnableAirPlay: self.reloadButton.rx.tap
                             .map { true }
                             .throttle(1.0, scheduler: ConcurrentMainScheduler.instance),
-                         requestSeekTo: self.seekBarView.slider.rx.value.asObservable())
+                         requestSeekTo: self.seekBarView.slider.rx.value.asObservable()
+                                            .sample(self.seekBarView.slider.rx.controlEvent(.touchUpInside))
+                                            .distinctUntilChanged())
     }()
 
     private let playerView = PlayerView()
