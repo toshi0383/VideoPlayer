@@ -144,43 +144,34 @@ extension ViewController {
                     .observeOn(ConcurrentMainScheduler.instance)
                     .share()
 
+                // Sync subscription lifecycle with player
+                let playerDisposeBag = me.viewModel.player.playerDisposeBag
+
                 periodicTime
                     .bind(to: me.seekBarView.slider.rx.value)
-                    .disposed(by: me.disposeBag)
+                    .disposed(by: playerDisposeBag)
 
                 periodicTime
-                    .map { time in
-                        let hour = Int(time / (60 * 60))
-                        let minutes = Int((time / 60).truncatingRemainder(dividingBy: 60))
-                        let second = Int(time.truncatingRemainder(dividingBy: 60))
-                        let hourText = hour > 0 ? "\(String(format: "%02d", hour)):" : ""
-                        return "\(hourText)\(String(format: "%02d", minutes)):\(String(format: "%02d", second))"
-                    }
+                    .map(timeLabel)
                     .bind(to: me.seekBarView.currentTimeLabel.rx.text)
-                    .disposed(by: me.disposeBag)
+                    .disposed(by: playerDisposeBag)
 
                 let duration = monitor.duration
-                    .map { $0.seconds }
+                    .map { Float($0.seconds) }
                     .observeOn(ConcurrentMainScheduler.instance)
                     .share()
 
                 duration
-                    .map { time in
-                        let hour = Int(time / (60 * 60))
-                        let minutes = Int((time / 60).truncatingRemainder(dividingBy: 60))
-                        let second = Int(time.truncatingRemainder(dividingBy: 60))
-                        let hourText = hour > 0 ? "\(String(format: "%02d", hour)):" : ""
-                        return "\(hourText)\(String(format: "%02d", minutes)):\(String(format: "%02d", second))"
-                    }
+                    .map(timeLabel)
                     .bind(to: me.seekBarView.totalTimeLabel.rx.text)
-                    .disposed(by: me.disposeBag)
+                    .disposed(by: playerDisposeBag)
 
                 duration
                     .subscribe(onNext: { [weak self] duration in
-                        self?.seekBarView.slider.maximumValue = Float(duration)
+                        self?.seekBarView.slider.maximumValue = duration
                         self?.seekBarView.slider.value = 0
                     })
-                    .disposed(by: me.disposeBag)
+                    .disposed(by: playerDisposeBag)
             })
             .disposed(by: disposeBag)
 

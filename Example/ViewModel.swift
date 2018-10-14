@@ -18,7 +18,7 @@ final class ViewModel {
     /// See: https://azure.microsoft.com/en-us/blog/live-247-reference-streams-available/
 //    private let url = URL(string: "http://b028.wpc.azureedge.net/80B028/Samples/a38e6323-95e9-4f1f-9b38-75eba91704e4/5f2ce531-d508-49fb-8152-647eba422aec.ism/Manifest(format=m3u8-aapl)")!
 
-    private var player: VideoPlayer! {
+    private(set) var player: VideoPlayer! {
         didSet {
             monitor = player?.monitor
         }
