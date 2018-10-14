@@ -34,19 +34,20 @@ public final class VideoPlayer {
     /// - developer note: NOT allowed to touch raw AVPleyer instance.
     public init(url: URL,
                 control: VideoPlayerControl,
-                factory: VideoPlayerFactoryType = VideoPlayerFactory()) {
+                factory: VideoPlayerFactoryType = VideoPlayerFactory(),
+                scheduler: SchedulerType = ConcurrentDispatchQueueScheduler(qos: .default)) {
 
         self.monitor = VideoPlayerMonitor()
         self.control = control
 
         player = factory.makeVideoPlayer(AVPlayerItem(asset: AVURLAsset(url: url)),
                                          playerDisposeBag: playerDisposeBag)
-            .observeOn(ConcurrentDispatchQueueScheduler(qos: .default))
-            .do(onNext: { [weak monitor, weak playerDisposeBag] videoPlayer in
+            .observeOn(scheduler)
+            .do(onNext: { [weak monitor, weak playerDisposeBag] playerWrapper in
                 guard let monitor = monitor,
                     let playerDisposeBag = playerDisposeBag else { return }
 
-                let stream = videoPlayer.stream
+                let stream = playerWrapper.stream
 
                 stream.rate
                     .bind(to: monitor._rate)
@@ -108,13 +109,17 @@ public final class VideoPlayer {
                     .bind(to: monitor._duration)
                     .disposed(by: playerDisposeBag)
 
-                _ = endPosition.map { $0.seconds }
-                    .debug("[endPosition]")
-                    .subscribe()
+                do {
+                    endPosition.map { $0.seconds }
+                        .debug("[endPosition]")
+                        .subscribe()
+                        .disposed(by: playerDisposeBag)
 
-                _ = stream.assetDuration.map { $0.seconds }
-                    .debug("[assetDuration]")
-                    .subscribe()
+                    stream.assetDuration.map { $0.seconds }
+                        .debug("[assetDuration]")
+                        .subscribe()
+                        .disposed(by: playerDisposeBag)
+                }
 
                 Observable.combineLatest(isSeekable, control.seekTo.asObservable())
                     .map { $0.0 ? $0.1 : nil }
@@ -131,6 +136,7 @@ public final class VideoPlayer {
                     .disposed(by: playerDisposeBag)
             })
             .map { $0.player }
+            .take(1)
             .asSingle()
     }
 }

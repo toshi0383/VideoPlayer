@@ -11,24 +11,26 @@ final class VideoPlayerTests: XCTestCase {
 
     func test_player_player() {
         let scheduler = TestScheduler(initialClock: 0)
-        let dep = Dependency()
+        let dep = Dependency(scheduler: scheduler)
 
-        let xs = dep.player.player.asObservable()
+        scheduler.scheduleAt(300) {
+            dep.isPlayable.accept(true)
+            dep.playerItemStatus.accept(.readyToPlay)
+        }
 
-        let res = scheduler.start { xs }
+        let res = BehaviorRelay<AVPlayer?>(value: nil)
+        _ = dep.player.player.asObservable()
+            .bind(to: res)
 
-        let correct = Recorded<Event<AVPlayer>>.events(
-            .next(200, dep.factory.player),
-            .completed(200)
-        )
-
-        XCTAssertEqual(res.events, correct)
+        scheduler.advanceTo(900)
+        XCTAssertEqual(res.value, dep.factory.player)
     }
 
     func test_control_setRate() {
         let scheduler = TestScheduler(initialClock: 0)
-        let dep = Dependency()
+        let dep = Dependency(scheduler: scheduler)
         _ = dep.player.player.subscribe()
+        dep.isPlayable.accept(true)
 
         scheduler.scheduleAt(300) {
             dep.playerRate.accept(1.0)
@@ -53,8 +55,9 @@ final class VideoPlayerTests: XCTestCase {
 
     func test_monitor_rate() {
         let scheduler = TestScheduler(initialClock: 0)
-        let dep = Dependency()
+        let dep = Dependency(scheduler: scheduler)
         _ = dep.player.player.subscribe()
+        dep.isPlayable.accept(true)
 
         scheduler.scheduleAt(300) {
             dep.playerRate.accept(1.0)
@@ -87,19 +90,21 @@ extension VideoPlayerTests {
         let stream: VideoPlayerStream
         let factory: MockVideoPlayerFactory
 
+        let isPlayable = PublishRelay<Bool>()
         let playerRate = PublishRelay<Float>()
         let isExternalPlaybackActive = PublishRelay<Bool>()
         let playerItemStatus = PublishRelay<AVPlayerItem.Status>()
         var playerDisposeBag = DisposeBag()
 
-        init() {
+        init(scheduler: TestScheduler) {
             control = VideoPlayerControl()
-            stream = VideoPlayerStream(isPlayable: .just(true),
+            stream = VideoPlayerStream(isPlayable: isPlayable.asObservable(),
                                        assetDuration: .empty(),
                                        playerItemStatus: playerItemStatus.asObservable(),
                                        seekableTimeRanges: .empty(),
                                        timedMetadata: .empty(),
                                        currentTime: .empty(),
+                                       periodicTime: .empty(),
                                        rate: playerRate.asObservable(),
                                        isExternalPlaybackActive: isExternalPlaybackActive.asObservable(),
                                        setPreferredPeakBitrate: { _ in },
@@ -113,7 +118,8 @@ extension VideoPlayerTests {
             factory = MockVideoPlayerFactory(stream: stream)
             player = VideoPlayer(url: url,
                                  control: control,
-                                 factory: factory)
+                                 factory: factory,
+                                 scheduler: scheduler)
         }
     }
 }

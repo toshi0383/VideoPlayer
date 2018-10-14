@@ -1,6 +1,7 @@
 import AVFoundation
-import VideoPlayer
+@testable import VideoPlayer
 import RxSwift
+import RxTest
 
 public final class MockVideoPlayerFactory: VideoPlayerFactoryType {
 
@@ -15,7 +16,8 @@ public final class MockVideoPlayerFactory: VideoPlayerFactoryType {
     }
 
     public func makeVideoPlayer(_ playerItem: AVPlayerItem, playerDisposeBag: DisposeBag) -> Observable<AVPlayerWrapperType> {
-        return .just(MockVideoPlayer(player: player, stream: stream))
+        return stream.isPlayable
+            .map { [unowned self] _ in MockVideoPlayer(player: self.player, stream: self.stream) }
     }
 }
 
