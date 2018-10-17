@@ -148,6 +148,12 @@ extension ViewController {
                 let playerDisposeBag = me.viewModel.player.playerDisposeBag
 
                 periodicTime
+                    .withLatestFrom(Observable
+                        .merge(me.seekBarView.slider.rx.controlEvent(.touchUp).map { true },
+                               me.seekBarView.slider.rx.controlEvent(.touchDown).map { false })
+                        .startWith(true)) { ($0, $1) }
+                    .filter { $1 }
+                    .map { $0.0 }
                     .bind(to: me.seekBarView.slider.rx.value)
                     .disposed(by: playerDisposeBag)
 

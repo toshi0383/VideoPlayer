@@ -52,7 +52,7 @@ final class ViewModel {
 
         requestSeekTo
             .debug("[requestSeekTo]")
-            .map { CMTime(seconds: Double($0), preferredTimescale: 1) }
+            .map { CMTime(seconds: Double($0), preferredTimescale: CMTimeScale(NSEC_PER_SEC)) }
             .bind(to: control.seekTo)
             .disposed(by: disposeBag)
 

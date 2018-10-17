@@ -333,7 +333,7 @@ public final class VideoPlayerControl {
     /// - parameter rate: set 0.0 if you prefer player to be paused initially.
     /// - parameter seekTo: initial seek position to start playback
     public init(rate: Float = 1.0,
-                seekTo: CMTime = CMTime(seconds: 0, preferredTimescale: 1)) {
+                seekTo: CMTime = CMTime(seconds: 0, preferredTimescale: CMTimeScale(NSEC_PER_SEC))) {
         self.setRate = BehaviorRelay(value: rate)
         self.seekTo = BehaviorRelay(value: seekTo)
     }
