@@ -27,6 +27,11 @@ final class ViewController: UIViewController {
     private let reloadButton = UIButton(type: .system)
     private let toggleMonitorButton = UIButton(type: .system)
     private let disposeBag = DisposeBag()
+
+    /// Cached during background playback
+    ///
+    /// - SeeAlso: https://developer.apple.com/documentation/avfoundation/media_assets_playback_and_editing/creating_a_basic_video_player_ios_and_tvos/playing_audio_from_a_video_asset_in_the_background
+    private var playerCacheForBackgroundPlayback: AVPlayer?
 }
 
 extension ViewController {
@@ -183,6 +188,29 @@ extension ViewController {
 
         viewModel.rateButtonRate.asObservable()
             .bind(to: rateButton.rate)
+            .disposed(by: disposeBag)
+
+        // MARK: Background Playback
+
+        // SeeAlso: https://developer.apple.com/documentation/avfoundation/media_assets_playback_and_editing/creating_a_basic_video_player_ios_and_tvos/playing_audio_from_a_video_asset_in_the_background
+
+        let nc = NotificationCenter.default
+
+        Observable
+            .merge(nc.rx.notification(.UIApplicationDidEnterBackground).map { _ in true },
+                   nc.rx.notification(.UIApplicationWillEnterForeground).map { _ in false })
+            .observeOn(ConcurrentMainScheduler.instance)
+            .subscribe(onNext: { [weak self] isDetach in
+                guard let me = self else { return }
+
+                if isDetach {
+                    me.playerCacheForBackgroundPlayback = me.playerView.playerLayer.player
+                    me.playerView.playerLayer.player = nil
+                } else {
+                    me.playerView.playerLayer.player = me.playerCacheForBackgroundPlayback
+                    me.playerCacheForBackgroundPlayback = nil
+                }
+            })
             .disposed(by: disposeBag)
 
         // MARK: Log
