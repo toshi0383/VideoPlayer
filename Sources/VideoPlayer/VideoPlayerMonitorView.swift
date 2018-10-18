@@ -44,7 +44,7 @@ public class VideoPlayerMonitorView: UIView {
                     .startWith("")
                     .map { "MPVolumeView.isWirelessRouteActive: \($0)" },
 
-                nc.rx.notification(.AVAudioSessionRouteChange)
+                nc.rx.notification(AVAudioSession.routeChangeNotification)
                     .map { ($0.object as! AVAudioSession).currentRoute.outputs.map { o in "o.portType: \(o.portType), o: \(o)" } }
                     .map { $0.description }
                     .startWith("")

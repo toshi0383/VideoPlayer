@@ -197,8 +197,8 @@ extension ViewController {
         let nc = NotificationCenter.default
 
         Observable
-            .merge(nc.rx.notification(.UIApplicationDidEnterBackground).map { _ in true },
-                   nc.rx.notification(.UIApplicationWillEnterForeground).map { _ in false })
+            .merge(nc.rx.notification(UIApplication.didEnterBackgroundNotification).map { _ in true },
+                   nc.rx.notification(UIApplication.willEnterForegroundNotification).map { _ in false })
             .observeOn(ConcurrentMainScheduler.instance)
             .subscribe(onNext: { [weak self] isDetach in
                 guard let me = self else { return }

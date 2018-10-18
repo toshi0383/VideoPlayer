@@ -2,6 +2,8 @@ name: Example
 options:
   minimumXcodeGenVersion: 1.11.2
   bundleIdPrefix: jp.toshi0383
+settings:
+  SWIFT_VERSION: 4.2
 configFiles:
   Debug: user.xcconfig
   Release: user.xcconfig

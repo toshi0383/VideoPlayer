@@ -81,8 +81,8 @@ public final class VideoPlayer {
                         guard let seekableLastTimeRanges = seekableTimeRanges.last else { return nil }
 
                         let seekableLastTimeRangeValue = seekableLastTimeRanges.timeRangeValue
-                        guard seekableLastTimeRangeValue != kCMTimeRangeInvalid
-                            && seekableLastTimeRangeValue != kCMTimeRangeZero else { return nil }
+                        guard seekableLastTimeRangeValue != CMTimeRange.invalid
+                            && seekableLastTimeRangeValue != CMTimeRange.zero else { return nil }
 
                         let endPosition = seekableLastTimeRangeValue.start + seekableLastTimeRangeValue.duration
                         guard endPosition.seconds > 0 else { return nil }
@@ -256,7 +256,7 @@ public final class AVPlayerWrapper: AVPlayerWrapperType {
                                         seekTo: { seekTo -> Observable<Bool> in
                                             return Observable.create { [weak playerItem] observer in
                                                 observer.onNext(true)
-                                                playerItem?.seek(to: seekTo, toleranceBefore: kCMTimeZero, toleranceAfter: kCMTimeZero, completionHandler: { _ in
+                                                playerItem?.seek(to: seekTo, toleranceBefore: CMTime.zero, toleranceAfter: CMTime.zero, completionHandler: { _ in
 
                                                     // Note:
                                                     //   We don't know if `finished: false` means that either
