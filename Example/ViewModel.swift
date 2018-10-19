@@ -41,12 +41,22 @@ final class ViewModel {
         #warning("FIXME: stub")
         let playPauseByApplicationState = Observable<Float>.empty()
 
+        let nc = NotificationCenter.default
+
+        let isMirroring = Observable
+            .merge(nc.rx.notification(UIScreen.didConnectNotification).map { _ in },
+                   nc.rx.notification(UIScreen.didDisconnectNotification).map { _ in })
+            .startWith(())
+            .observeOn(ConcurrentMainScheduler.instance)
+            .flatMap { Observable.just(UIScreen.screens.count > 1) }
+            .distinctUntilChanged()
+
         Observable
             .combineLatest(Observable.merge(requestRate,
                                             playPauseByApplicationState.startWith(1.0)),
-                           isRecording)
-            .filter { !$1 }
-            .map { $0.0 }
+                           isRecording,
+                           isMirroring)
+            .map { $1 || $2 ? 0.0 : $0 }
             .bind(to: control.setRate)
             .disposed(by: disposeBag)
 
@@ -74,7 +84,7 @@ final class ViewModel {
                     .bind(to: me.playerRelay)
                     .disposed(by: me.player.playerDisposeBag)
 
-                me.player.control.setRate
+                requestRate
                     .map { RateButton.Rate(rawValue: $0)! }
                     .bind(to: me._rateButtonRate)
                     .disposed(by: me.player.playerDisposeBag)

@@ -139,6 +139,7 @@ extension ViewController {
                 guard let me = self else { return }
 
                 me.playerView.playerLayer.player = player
+                player.allowsExternalPlayback = false
 
                 guard let monitor = me.viewModel.monitor else { return }
 
