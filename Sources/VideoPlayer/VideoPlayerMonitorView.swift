@@ -46,7 +46,7 @@ public class VideoPlayerMonitorView: UIView {
 
                 nc.rx.notification(AVAudioSession.routeChangeNotification)
                     .map { ($0.object as! AVAudioSession).currentRoute.outputs.map { o in "o.portType: \(o.portType), o: \(o)" } }
-                    .map { $0.description }
+                    .map { "[routeChange] \($0.description)" }
                     .startWith("")
             )
             .filter { [unowned self] _ in self.enableDebugInfo }
