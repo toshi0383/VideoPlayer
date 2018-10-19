@@ -1,4 +1,5 @@
 #import <UIKit/UIKit.h>
+#import "AVAudioSession+SetCategory.h"
 
 //! Project version number for VideoPlayer.
 FOUNDATION_EXPORT double VideoPlayerVersionNumber;
