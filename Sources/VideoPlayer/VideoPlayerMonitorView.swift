@@ -2,6 +2,7 @@ import AVFoundation
 import MediaPlayer
 import RxCocoa
 import RxSwift
+import UIKit
 
 /// A transparent view which displays infomations from VideoPlayerMonitor.
 public class VideoPlayerMonitorView: UIView {
@@ -30,6 +31,14 @@ public class VideoPlayerMonitorView: UIView {
     private var debugInfo: Observable<String> {
         let nc = NotificationCenter.default
 
+        let isMirroring = Observable
+            .merge(nc.rx.notification(UIScreen.didConnectNotification).map { _ in },
+                   nc.rx.notification(UIScreen.didDisconnectNotification).map { _ in })
+            .startWith(())
+            .observeOn(ConcurrentMainScheduler.instance)
+            .flatMap { Observable.just(UIScreen.screens.count > 1) }
+            .distinctUntilChanged()
+
         return Observable
             .combineLatest(
                 nc.rx.notification(.MPVolumeViewWirelessRoutesAvailableDidChange)
@@ -47,7 +56,10 @@ public class VideoPlayerMonitorView: UIView {
                 nc.rx.notification(AVAudioSession.routeChangeNotification)
                     .map { ($0.object as! AVAudioSession).currentRoute.outputs.map { o in "o.portType: \(o.portType), o: \(o)" } }
                     .map { "[routeChange] \($0.description)" }
-                    .startWith("")
+                    .startWith(""),
+
+                isMirroring.map { "[isMirroring] \($0)" }
+
             )
             .filter { [unowned self] _ in self.enableDebugInfo }
             .map(joined(separator: "\n"))
@@ -89,8 +101,8 @@ func joined(separator: String) -> (String, String) -> String {
     }
 }
 
-func joined(separator: String) -> (String, String, String) -> String {
+func joined(separator: String) -> (String, String, String, String) -> String {
     return {
-        [$0, $1, $2].joinNonEmpty(separator: separator)
+        [$0, $1, $2, $3].joinNonEmpty(separator: separator)
     }
 }

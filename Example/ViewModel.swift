@@ -29,8 +29,15 @@ final class ViewModel {
     private let control = VideoPlayerControl()
     private let disposeBag = DisposeBag()
 
+    /// Initializes ViewModel
+    ///
+    /// - Parameters:
+    ///   - requestRate: Rate which you want to play.
+    ///   - requestReloadWithEnableAutoAirPlay: AutoAirPlay means that if AirPlay should (not) start when detected mirroring mode.
+    ///   - requestSeekTo: Seek position.
+    ///   - videoPlayerFactory: VideoPlayerFactoryType. Uses VideoPlayerFactory if nil.
     init(requestRate: Observable<Float>,
-         requestReloadWithEnableAirPlay: Observable<Bool>,
+         requestReloadWithEnableAutoAirPlay: Observable<Bool>,
          requestSeekTo: Observable<Float>,
          videoPlayerFactory: VideoPlayerFactoryType? = nil) {
 
@@ -41,22 +48,20 @@ final class ViewModel {
         #warning("FIXME: stub")
         let playPauseByApplicationState = Observable<Float>.empty()
 
-        let nc = NotificationCenter.default
-
-        let isMirroring = Observable
-            .merge(nc.rx.notification(UIScreen.didConnectNotification).map { _ in },
-                   nc.rx.notification(UIScreen.didDisconnectNotification).map { _ in })
-            .startWith(())
-            .observeOn(ConcurrentMainScheduler.instance)
-            .flatMap { Observable.just(UIScreen.screens.count > 1) }
-            .distinctUntilChanged()
-
         Observable
+
+            // NOTE: Restrict playback by blocking setRate stream like this.
+            //   This is just an example.
             .combineLatest(Observable.merge(requestRate,
                                             playPauseByApplicationState.startWith(1.0)),
-                           isRecording,
-                           isMirroring)
-            .map { $1 || $2 ? 0.0 : $0 }
+                           isRecording)
+            .map { $0.1 ? 0.0 : $0.0 }
+
+            // NOTE: Do not apply this.
+            //   `rate` can be updated by system, so you may have to update with same value.
+            //
+            // .distinctUntilChanged()
+
             .bind(to: control.setRate)
             .disposed(by: disposeBag)
 
@@ -66,13 +71,13 @@ final class ViewModel {
             .bind(to: control.seekTo)
             .disposed(by: disposeBag)
 
-        requestReloadWithEnableAirPlay
+        requestReloadWithEnableAutoAirPlay
             .startWith(false) // NOTE: initial load
-            .subscribe(onNext: { [weak self] enableAirPlay in
+            .subscribe(onNext: { [weak self] enableAutoAirPlay in
                 guard let me = self else { return }
 
                 let factory = videoPlayerFactory
-                    ?? VideoPlayerFactory(configuration: .init(enableAirPlay: enableAirPlay))
+                    ?? VideoPlayerFactory()
 
                 me.player = VideoPlayer(url: me.url,
                                         control: me.control,
@@ -81,6 +86,15 @@ final class ViewModel {
                 me.player.objects.append(Something())
 
                 me.player.player.asObservable()
+                    .do(onNext: { avplayer in
+                        // AVPlayer configuration should be done right after its initialization.
+
+                        // e.g AirPlay by Mirroring
+                        avplayer.usesExternalPlaybackWhileExternalScreenIsActive = enableAutoAirPlay
+
+                        // e.g. more responsive playback
+                        // avplayer.automaticallyWaitsToMinimizeStalling = false
+                    })
                     .bind(to: me.playerRelay)
                     .disposed(by: me.player.playerDisposeBag)
 
@@ -90,6 +104,7 @@ final class ViewModel {
                     .disposed(by: me.player.playerDisposeBag)
             })
             .disposed(by: disposeBag)
+
     }
 }
 

@@ -9,7 +9,7 @@ final class ViewController: UIViewController {
 
     private lazy var viewModel: ViewModel = {
         return ViewModel(requestRate: self.rateButton.nextRate.map { $0.rawValue },
-                         requestReloadWithEnableAirPlay: self.reloadButton.rx.tap
+                         requestReloadWithEnableAutoAirPlay: self.reloadButton.rx.tap
                             .map { true }
                             .throttle(1.0, scheduler: ConcurrentMainScheduler.instance),
                          requestSeekTo: self.seekBarView.slider.rx.value.asObservable()
@@ -139,7 +139,6 @@ extension ViewController {
                 guard let me = self else { return }
 
                 me.playerView.playerLayer.player = player
-                player.allowsExternalPlayback = false
 
                 guard let monitor = me.viewModel.monitor else { return }
 

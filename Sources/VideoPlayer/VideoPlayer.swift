@@ -150,17 +150,7 @@ public protocol VideoPlayerFactoryType {
 
 public final class VideoPlayerFactory: VideoPlayerFactoryType {
 
-    public final class Configuration {
-        let enableAirPlay: Bool
-
-        public init(enableAirPlay: Bool = false) {
-            self.enableAirPlay = enableAirPlay
-        }
-    }
-
     public let assetResourceLoaderDelegate: AVAssetResourceLoaderDelegate?
-
-    private let configuration: Configuration
 
     public func makeVideoPlayer(_ playerItem: AVPlayerItem,
                                 playerDisposeBag: DisposeBag) -> Observable<AVPlayerWrapperType> {
@@ -183,14 +173,11 @@ public final class VideoPlayerFactory: VideoPlayerFactoryType {
             //   therefore self would be nil if it's a weak ref.
             .map { _ in
                 AVPlayerWrapper(playerItem: playerItem,
-                                enableAirPlay: self.configuration.enableAirPlay,
                                 playerDisposeBag: playerDisposeBag)
             }
     }
 
-    public init(configuration: Configuration = .init(),
-                assetResourceLoaderDelegate: AVAssetResourceLoaderDelegate? = nil) {
-        self.configuration = configuration
+    public init(assetResourceLoaderDelegate: AVAssetResourceLoaderDelegate? = nil) {
         self.assetResourceLoaderDelegate = assetResourceLoaderDelegate
     }
 }
@@ -213,12 +200,10 @@ public final class AVPlayerWrapper: AVPlayerWrapperType {
     public let stream: VideoPlayerStream
 
     public init(playerItem: AVPlayerItem,
-                enableAirPlay: Bool,
                 playerDisposeBag: DisposeBag,
                 notification: NotificationCenter = .default) {
 
         self.player = AVPlayer(playerItem: playerItem)
-        self.player.usesExternalPlaybackWhileExternalScreenIsActive = enableAirPlay
 
         func currentTime() -> Observable<CMTime> {
             return .create { [weak playerItem] observer in
