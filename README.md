@@ -12,6 +12,21 @@ VideoPlayer
 - VideoPlayerMonitor
 ```
 
+# Features (Including Example)
+
+work in progress
+
+- [x] Play/Pause
+- [x] Seek
+- [x] Background Playback
+- [x] Background AirPlay
+- [x] Built-in player MonitorView for debugging
+- [x] allows recording or not (defaults to no)
+- [x] fundamental player state observables (e.g. rate, periodicTime, duration..)
+- [ ] any loading state observable
+- [ ] Cross-viewcontroller AirPlay (will be in Example soon)
+- [ ] Picture-in-Picture (will be in Example soon)
+
 # Usage
 ## Initializing AVPlayer
 Observe `VideoPlayer.player: Single<AVPlayer>` to get AVPlayer instance.
@@ -19,6 +34,8 @@ Observe `VideoPlayer.player: Single<AVPlayer>` to get AVPlayer instance.
 See: [Example](Example/)
 
 ## Monitor and Control state
+
+Do not write `player?.pause()` any more.
 
 See: [Example](Example/)
 
