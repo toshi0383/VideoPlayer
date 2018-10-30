@@ -44,18 +44,10 @@ final class ViewModel {
         rateButtonRate = Property(_rateButtonRate)
 
         #warning("FIXME: stub")
-        let isRecording = Observable.just(false)
-        #warning("FIXME: stub")
         let playPauseByApplicationState = Observable<Float>.empty()
 
-        Observable
-
-            // NOTE: Restrict playback by blocking setRate stream like this.
-            //   This is just an example.
-            .combineLatest(Observable.merge(requestRate,
-                                            playPauseByApplicationState.startWith(1.0)),
-                           isRecording)
-            .map { $0.1 ? 0.0 : $0.0 }
+        Observable.merge(requestRate,
+                         playPauseByApplicationState.startWith(1.0))
 
             // NOTE: Do not apply this.
             //   `rate` can be updated by system, so you may have to update with same value.

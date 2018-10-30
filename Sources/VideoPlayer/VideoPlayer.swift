@@ -33,6 +33,7 @@ public final class VideoPlayer {
     ///      seealso: MockVideoPlayerFactory
     /// - developer note: NOT allowed to touch raw AVPleyer instance.
     public init(url: URL,
+                configuration: Configuration = .init(),
                 control: VideoPlayerControl,
                 factory: VideoPlayerFactoryType = VideoPlayerFactory(),
                 scheduler: SchedulerType = ConcurrentDispatchQueueScheduler(qos: .default)) {
@@ -53,7 +54,29 @@ public final class VideoPlayer {
                     .bind(to: monitor._rate)
                     .disposed(by: playerDisposeBag)
 
-                Observable.combineLatest(stream.playerItemStatus, control.setRate)
+                func isRecording() -> Observable<Bool> {
+                    return UIScreen.main.rx.observe(Bool.self, "captured", retainSelf: false)
+                        .filterNil()
+
+                        // NOTE: UI access (UIScreen)
+                        .observeOn(ConcurrentMainScheduler.instance)
+
+                        .flatMap { isCaptured -> Observable<Bool> in
+                            return .just(isCaptured
+                                && UIScreen.screens.count  == 1 // not mirroring
+                                && AVAudioSession.sharedInstance() // nor airplaying
+                                    .currentRoute.outputs.contains(where: { $0.portType == .airPlay })
+                            )
+                        }
+                }
+
+                let filteredSetRate: Observable<Float> = configuration.allowsRecording
+                    ? control.setRate.asObservable()
+                    : Observable.combineLatest(control.setRate.asObservable(), isRecording())
+                        .map { $0.1 ? 0.0 : $0.0 }
+
+                Observable.combineLatest(stream.playerItemStatus,
+                                         filteredSetRate)
                     .filter { $0.0 == .readyToPlay }
                     .map { $1 }
                     .bind(to: stream.setRate)
@@ -138,6 +161,16 @@ public final class VideoPlayer {
             .map { $0.player }
             .take(1)
             .asSingle()
+    }
+}
+
+// MARK: Configuration
+
+public struct Configuration {
+    public let allowsRecording: Bool
+
+    public init(allowsRecording: Bool = false) {
+        self.allowsRecording = allowsRecording
     }
 }
 
