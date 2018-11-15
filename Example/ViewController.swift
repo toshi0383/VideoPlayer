@@ -162,7 +162,9 @@ extension ViewController {
                     .bind(to: me.seekBarView.slider.rx.value)
                     .disposed(by: playerDisposeBag)
 
-                periodicTime
+                Observable
+                    .merge(me.seekBarView.slider.rx.value.asObservable(),
+                           periodicTime)
                     .map(timeLabel)
                     .bind(to: me.seekBarView.currentTimeLabel.rx.text)
                     .disposed(by: playerDisposeBag)
@@ -180,8 +182,12 @@ extension ViewController {
                 duration
                     .subscribe(onNext: { [weak self] duration in
                         self?.seekBarView.slider.maximumValue = duration
-                        self?.seekBarView.slider.value = 0
                     })
+                    .disposed(by: playerDisposeBag)
+
+                monitor.isPlayerSeekable
+                    .map { !$0 }
+                    .bind(to: me.seekBarView.rx.isHidden)
                     .disposed(by: playerDisposeBag)
             })
             .disposed(by: disposeBag)

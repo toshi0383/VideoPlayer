@@ -119,6 +119,10 @@ public final class VideoPlayer {
                     .distinctUntilChanged()
                     .share(replay: 1)
 
+                isSeekable
+                    .bind(to: monitor._isPlayerSeekable)
+                    .disposed(by: playerDisposeBag)
+
                 stream.periodicTime
                     .withLatest(from: stream.isSeeking)
                     .filter { !$1 }
@@ -223,6 +227,7 @@ public protocol AVPlayerWrapperType {
 }
 
 /// AVPlayer wrapper
+///
 /// Allowed to touch raw AVPlayer instance.
 /// Responsible for binding player state to VideoPlayerStream and vice-versa.
 ///
@@ -310,6 +315,9 @@ public final class VideoPlayerMonitor {
     public let isPlayerSeeking: Observable<Bool>
 
     /// .share(replay:1, scope: .forever)
+    public let isPlayerSeekable: Observable<Bool>
+
+    /// .share(replay:1, scope: .forever)
     public let isAirPlaying: Observable<Bool>
 
     /// .share(replay:1, scope: .forever)
@@ -320,6 +328,7 @@ public final class VideoPlayerMonitor {
 
     internal let _rate = BehaviorRelay<Float?>(value: nil)
     internal let _isPlayerSeeking = BehaviorRelay<Bool>(value: false)
+    internal let _isPlayerSeekable = BehaviorRelay<Bool>(value: false)
     internal let _isAirPlaying = BehaviorRelay<Bool>(value: false)
     internal let _duration = BehaviorRelay<CMTime?>(value: nil)
     internal let _periodicTime = BehaviorRelay<CMTime?>(value: nil)
@@ -329,6 +338,7 @@ public final class VideoPlayerMonitor {
         duration = _duration.filterNil()
         periodicTime = _periodicTime.filterNil()
         isPlayerSeeking = _isPlayerSeeking.asObservable()
+        isPlayerSeekable = _isPlayerSeekable.asObservable()
         isAirPlaying = _isAirPlaying.asObservable()
     }
 
