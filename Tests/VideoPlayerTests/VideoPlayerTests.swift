@@ -74,11 +74,6 @@ final class VideoPlayerTests: XCTestCase {
 
         XCTAssertEqual(res.events, correct)
     }
-
-    static var allTests = [
-        ("test_monitor_rate", test_monitor_rate),
-        ("test_control_setRate", test_control_setRate),
-    ]
 }
 
 extension VideoPlayerTests {
@@ -116,7 +111,7 @@ extension VideoPlayerTests {
                                        playerDisposeBag: playerDisposeBag)
 
             factory = MockVideoPlayerFactory(stream: stream)
-            player = VideoPlayer(url: url,
+            player = VideoPlayer(asset: AVURLAsset(url: url),
                                  control: control,
                                  factory: factory,
                                  scheduler: scheduler)

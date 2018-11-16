@@ -32,7 +32,7 @@ public final class VideoPlayer {
     /// - parameter factory: Mock and DI this protocol instance to mock player creation and states.
     ///      seealso: MockVideoPlayerFactory
     /// - developer note: NOT allowed to touch raw AVPleyer instance.
-    public init(url: URL,
+    public init(asset: AVURLAsset,
                 configuration: Configuration = .init(),
                 control: VideoPlayerControl,
                 factory: VideoPlayerFactoryType = VideoPlayerFactory(),
@@ -41,7 +41,7 @@ public final class VideoPlayer {
         self.monitor = VideoPlayerMonitor()
         self.control = control
 
-        player = factory.makeVideoPlayer(AVPlayerItem(asset: AVURLAsset(url: url)),
+        player = factory.makeVideoPlayer(asset,
                                          playerDisposeBag: playerDisposeBag)
             .observeOn(scheduler)
             .do(onNext: { [weak monitor, weak playerDisposeBag] playerWrapper in
@@ -182,22 +182,14 @@ public struct Configuration {
 
 /// VideoPlayer will use this to get VideoPlayer instance.
 public protocol VideoPlayerFactoryType {
-    func makeVideoPlayer(_ playerItem: AVPlayerItem, playerDisposeBag: DisposeBag) -> Observable<AVPlayerWrapperType>
+    func makeVideoPlayer(_ asset: AVURLAsset, playerDisposeBag: DisposeBag) -> Observable<AVPlayerWrapperType>
 }
 
 public final class VideoPlayerFactory: VideoPlayerFactoryType {
 
-    public let assetResourceLoaderDelegate: AVAssetResourceLoaderDelegate?
-
-    public func makeVideoPlayer(_ playerItem: AVPlayerItem,
+    public func makeVideoPlayer(_ asset: AVURLAsset,
                                 playerDisposeBag: DisposeBag) -> Observable<AVPlayerWrapperType> {
-        if let delegate = assetResourceLoaderDelegate {
-            (playerItem.asset as? AVURLAsset)?.resourceLoader
-                .setDelegate(delegate, queue: .global(qos: .default))
-        }
-
-        return playerItem.asset.rx.isPlayable
-            .debug("[asset.rx.isPlayable]")
+        return asset.rx.isPlayable
             .filter { $0 }
             .take(1)
 
@@ -209,14 +201,12 @@ public final class VideoPlayerFactory: VideoPlayerFactoryType {
             //   VideoPlayerFactory is deallocated right after makeVideoPlayer is called,
             //   therefore self would be nil if it's a weak ref.
             .map { _ in
-                AVPlayerWrapper(playerItem: playerItem,
+                AVPlayerWrapper(playerItem: AVPlayerItem(asset: asset),
                                 playerDisposeBag: playerDisposeBag)
             }
     }
 
-    public init(assetResourceLoaderDelegate: AVAssetResourceLoaderDelegate? = nil) {
-        self.assetResourceLoaderDelegate = assetResourceLoaderDelegate
-    }
+    public init() {}
 }
 
 // MARK: VideoPlayer

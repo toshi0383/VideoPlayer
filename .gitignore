@@ -2,5 +2,6 @@
 *.xcodeproj
 .build/
 Carthage/
+Pods/
 user.xcconfig
 Exclude/

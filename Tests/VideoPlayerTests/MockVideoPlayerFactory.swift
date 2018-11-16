@@ -15,7 +15,7 @@ public final class MockVideoPlayerFactory: VideoPlayerFactoryType {
         self.stream = stream
     }
 
-    public func makeVideoPlayer(_ playerItem: AVPlayerItem, playerDisposeBag: DisposeBag) -> Observable<AVPlayerWrapperType> {
+    public func makeVideoPlayer(_ asset: AVURLAsset, playerDisposeBag: DisposeBag) -> Observable<AVPlayerWrapperType> {
         return stream.isPlayable
             .map { [unowned self] _ in MockVideoPlayer(player: self.player, stream: self.stream) }
     }

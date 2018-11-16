@@ -29,6 +29,8 @@ targets:
   VideoPlayerTests:
     platform: iOS
     type: bundle.unit-test
+    settings:
+      SWIFT_OBJC_BRIDGING_HEADER: Tests/VideoPlayerTests/BridgingHeader.h
     sources:
       - path: Tests/VideoPlayerTests/
         name: VideoPlayerTests

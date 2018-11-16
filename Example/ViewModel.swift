@@ -29,6 +29,8 @@ final class ViewModel {
     private let control = VideoPlayerControl()
     private let disposeBag = DisposeBag()
 
+    private var reloadDisposeBag = DisposeBag()
+
     /// Initializes ViewModel
     ///
     /// - Parameters:
@@ -58,7 +60,6 @@ final class ViewModel {
             .disposed(by: disposeBag)
 
         requestSeekTo
-            .debug("[requestSeekTo]")
             .map { CMTime(seconds: Double($0), preferredTimescale: CMTimeScale(NSEC_PER_SEC)) }
             .bind(to: control.seekTo)
             .disposed(by: disposeBag)
@@ -68,10 +69,20 @@ final class ViewModel {
             .subscribe(onNext: { [weak self] enableAutoAirPlay in
                 guard let me = self else { return }
 
-                let factory = videoPlayerFactory
-                    ?? VideoPlayerFactory()
+                me.reloadDisposeBag = DisposeBag()
 
-                me.player = VideoPlayer(url: me.url,
+                let factory = videoPlayerFactory ?? VideoPlayerFactory()
+
+                let asset = AVURLAsset(url: me.url)
+
+                /*
+                 Subscribe asset.resourceLoader.rx.loadingRequest to handle key loading requests.
+                 You must call setForwardToDelegate to ignore URLs that you aren't aware of.
+
+                 TODO: Support AVContentKeySession ?
+                 */
+
+                me.player = VideoPlayer(asset: asset,
                                         control: me.control,
                                         factory: factory)
 
@@ -88,12 +99,12 @@ final class ViewModel {
                         // avplayer.automaticallyWaitsToMinimizeStalling = false
                     })
                     .bind(to: me.playerRelay)
-                    .disposed(by: me.player.playerDisposeBag)
+                    .disposed(by: me.reloadDisposeBag)
 
                 requestRate
                     .map { RateButton.Rate(rawValue: $0)! }
                     .bind(to: me._rateButtonRate)
-                    .disposed(by: me.player.playerDisposeBag)
+                    .disposed(by: me.reloadDisposeBag)
             })
             .disposed(by: disposeBag)
 
