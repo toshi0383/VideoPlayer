@@ -64,7 +64,7 @@ public final class VideoPlayer {
                         .flatMap { isCaptured -> Observable<Bool> in
                             return .just(isCaptured
                                 && UIScreen.screens.count  == 1 // not mirroring
-                                && AVAudioSession.sharedInstance() // nor airplaying
+                                && !AVAudioSession.sharedInstance() // nor airplaying
                                     .currentRoute.outputs.contains(where: { $0.portType == .airPlay })
                             )
                         }
