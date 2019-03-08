@@ -76,11 +76,29 @@ final class ViewModel {
                 let asset = AVURLAsset(url: me.url)
 
                 /*
-                 Subscribe asset.resourceLoader.rx.loadingRequest to handle key loading requests.
-                 You must call setForwardToDelegate to ignore URLs that you aren't aware of.
+                 How to set AVAssetResourceLoaderDelegate to handle custom resource or license key resolution:
+
+                 Option 1: Using Rx
+
+                   Subscribe asset.resourceLoader.rx.loadingRequest to handle key loading requests.
+                   You must call setForwardToDelegate to ignore URLs that you aren't aware of.
+
+                   ```
+                   asset.resourceLoader.rx.loadingRequest
+                       .subscribe(/* resolve license etc..*/)
+
+                   asset.resourceLoader.rx.delegate.setForwardToDelegate(yourDelegate, retainDelegate: /*up to u*/)
+                   ```
+
+                 Option 2: Not using Rx
+
+                   ```
+                   asset.resourceLoader.setDelegate(yourAssetLoaderDelegate, queue: DispatchQueue.global())
+                   ```
 
                  TODO: Support AVContentKeySession ?
                  */
+
 
                 me.player = VideoPlayer(asset: asset,
                                         control: me.control,
