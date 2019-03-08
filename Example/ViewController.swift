@@ -138,6 +138,10 @@ extension ViewController {
             .subscribe(onNext: { [weak self] player in
                 guard let me = self else { return }
 
+                // AVPlayer instance is overwritten everytime.
+                //
+                // - WARNING: Make sure to remove manual kvo observer (if any)
+                //            before deallocation happens.
                 me.playerView.playerLayer.player = player
 
                 guard let monitor = me.viewModel.monitor else { return }
