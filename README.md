@@ -12,18 +12,22 @@ VideoPlayer
 - VideoPlayerMonitor
 ```
 
-# Features (Including Example)
+# Features (Including Example only features)
 
 work in progress
 
-- [x] Play/Pause
-- [x] Seek
+- [x] Play/Pause/Seek
 - [x] Background Playback
 - [x] Background AirPlay
 - [x] Built-in player MonitorView for debugging
 - [x] allows recording or not (defaults to no)
 - [x] fundamental player state observables (e.g. rate, periodicTime, duration..)
+- [x] Timed Metadata (MPEG2 transport stream only)
 - [ ] any loading state observable
+
+Demo code in Example.app
+
+- [x] In-Playlist Timed Metadata
 - [ ] Cross-viewcontroller AirPlay (will be in Example soon)
 - [ ] Picture-in-Picture (will be in Example soon)
 
