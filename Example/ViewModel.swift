@@ -66,6 +66,11 @@ final class ViewModel {
 
         requestReloadWithEnableAutoAirPlay
             .startWith(false) // NOTE: initial load
+            .flatMap { [weak self] enableAutoAirPlay -> Observable<Bool> in
+                guard let me = self else { return .empty() }
+                me.sendHeaderRequest(me.url) // to confirm the resource exists
+                return .just(enableAutoAirPlay)
+            }
             .subscribe(onNext: { [weak self] enableAutoAirPlay in
                 guard let me = self else { return }
 
@@ -126,6 +131,18 @@ final class ViewModel {
             })
             .disposed(by: disposeBag)
 
+    }
+}
+
+extension ViewModel {
+    func sendHeaderRequest(_ url: URL) {
+        var req = URLRequest(url: url)
+        req.httpMethod = "HEAD"
+        _ = URLSession.shared
+            .rx.response(request: req)
+            .subscribe(onNext: { (res, _) in
+                print("[res.allHeaderFields] \(res.allHeaderFields)")
+            })
     }
 }
 
