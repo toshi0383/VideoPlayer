@@ -344,7 +344,7 @@ public final class VideoPlayerMonitor {
     internal var consoleString: Observable<String> {
         return Observable
             .combineLatest(rate.map { "rate: \($0)" },
-                           timedMetadata.debug("[timedMetadata]").map { "timedMetadata: \($0)" },
+                           timedMetadata.map { "timedMetadata: \($0)" }.startWith(""),
                            isPlayerSeeking.map { "isPlayerSeeking: \($0)" },
                            isAirPlaying.map { "isAirPlaying: \($0)" })
             .map { [$0, $1, $2, $3].joined(separator: "\n") }

@@ -9,6 +9,8 @@ public class VideoPlayerMonitorView: UIView {
 
     var enableDebugInfo = true
 
+    public let additionalDebugInfo = BehaviorRelay<String>(value: "")
+
     private let textView = UITextView()
     private var monitorDisposeBag = DisposeBag()
 
@@ -20,7 +22,9 @@ public class VideoPlayerMonitorView: UIView {
             guard let monitor = monitor else { return }
 
             Observable
-                .combineLatest(monitor.consoleString, debugInfo.startWith(""))
+                .combineLatest(monitor.consoleString,
+                               debugInfo.startWith(""),
+                               additionalDebugInfo.asObservable())
                 .map(joined(separator: "\n"))
                 .bind(to: textView.rx.text)
                 .disposed(by: monitorDisposeBag)
@@ -98,6 +102,12 @@ extension Array where Element == String {
 func joined(separator: String) -> (String, String) -> String {
     return {
         [$0, $1].joinNonEmpty(separator: separator)
+    }
+}
+
+func joined(separator: String) -> (String, String, String) -> String {
+    return {
+        [$0, $1, $2].joinNonEmpty(separator: separator)
     }
 }
 

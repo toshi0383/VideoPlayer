@@ -7,6 +7,7 @@ final class ViewModel {
 
     let playerRelay = PublishRelay<AVPlayer>()
     let rateButtonRate: Property<RateButton.Rate>
+    let additionalDebugInfo = BehaviorRelay<String>(value: "")
 
     // retain (available > iOS9.3)
     private var metadataCollectorDelegate: NSObject?
@@ -132,6 +133,10 @@ final class ViewModel {
                             if let playerItem = avplayer.currentItem {
                                 let collector = AVPlayerItemMetadataCollector()
                                 let collectorDelegate = MetadataCollectorDelegate()
+
+                                collectorDelegate.metadataDebugInfo.asObservable()
+                                    .bind(to: me.additionalDebugInfo)
+                                    .disposed(by: me.reloadDisposeBag)
 
                                 me.metadataCollectorDelegate = collectorDelegate // retain
 

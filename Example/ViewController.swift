@@ -133,6 +133,10 @@ extension ViewController {
 
         // MARK: Player: load, control and monitor
 
+        viewModel.additionalDebugInfo.asObservable()
+            .bind(to: monitorView.additionalDebugInfo)
+            .disposed(by: disposeBag)
+
         viewModel.playerRelay.asObservable()
             .observeOn(ConcurrentMainScheduler.instance)
             .subscribe(onNext: { [weak self] player in
