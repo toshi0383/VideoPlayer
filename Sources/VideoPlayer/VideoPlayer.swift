@@ -90,6 +90,10 @@ public final class VideoPlayer {
                     .bind(to: monitor._isPlayerSeeking)
                     .disposed(by: playerDisposeBag)
 
+                stream.timedMetadata
+                    .bind(to: monitor._timedMetadata)
+                    .disposed(by: playerDisposeBag)
+
                 let isPlayable = stream.isPlayable
                 let playerItemStatus = stream.playerItemStatus
 
@@ -316,15 +320,20 @@ public final class VideoPlayerMonitor {
     /// .share(replay:1, scope: .forever)
     public let duration: Observable<CMTime>
 
+    /// .share(replay:1, scope: .forever)
+    public let timedMetadata: Observable<[AVMetadataItem]>
+
     internal let _rate = BehaviorRelay<Float?>(value: nil)
     internal let _isPlayerSeeking = BehaviorRelay<Bool>(value: false)
     internal let _isPlayerSeekable = BehaviorRelay<Bool>(value: false)
     internal let _isAirPlaying = BehaviorRelay<Bool>(value: false)
     internal let _duration = BehaviorRelay<CMTime?>(value: nil)
     internal let _periodicTime = BehaviorRelay<CMTime?>(value: nil)
+    internal let _timedMetadata = BehaviorRelay<[AVMetadataItem]?>(value: nil)
 
     internal init() {
         rate = _rate.filterNil()
+        timedMetadata = _timedMetadata.filterNil()
         duration = _duration.filterNil()
         periodicTime = _periodicTime.filterNil()
         isPlayerSeeking = _isPlayerSeeking.asObservable()
@@ -335,9 +344,10 @@ public final class VideoPlayerMonitor {
     internal var consoleString: Observable<String> {
         return Observable
             .combineLatest(rate.map { "rate: \($0)" },
+                           timedMetadata.debug("[timedMetadata]").map { "timedMetadata: \($0)" },
                            isPlayerSeeking.map { "isPlayerSeeking: \($0)" },
                            isAirPlaying.map { "isAirPlaying: \($0)" })
-            .map { [$0, $1, $2].joined(separator: "\n") }
+            .map { [$0, $1, $2, $3].joined(separator: "\n") }
     }
 }
 

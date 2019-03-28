@@ -19,6 +19,7 @@ public final class VideoPlayerStream {
     // MARK: stream => monitor (or internal state check)
 
     let rate: Observable<Float>
+    let timedMetadata: Observable<[AVMetadataItem]>
     let isExternalPlaybackActive: Observable<Bool>
     let playerItemStatus: Observable<AVPlayerItem.Status>
     let currentTime: Observable<CMTime>
@@ -48,6 +49,7 @@ public final class VideoPlayerStream {
                 playerDisposeBag: DisposeBag
         ) {
         self.isPlayable = isPlayable
+        self.timedMetadata = timedMetadata
         self.assetDuration = assetDuration
         self.rate = rate
         self.isExternalPlaybackActive = isExternalPlaybackActive
