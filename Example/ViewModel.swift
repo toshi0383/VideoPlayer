@@ -8,6 +8,9 @@ final class ViewModel {
     let playerRelay = PublishRelay<AVPlayer>()
     let rateButtonRate: Property<RateButton.Rate>
 
+    // retain (available > iOS9.3)
+    private var metadataCollectorDelegate: NSObject?
+
     private let _rateButtonRate = BehaviorRelay<RateButton.Rate>(value: .x1_0)
 
     // VOD
@@ -112,7 +115,9 @@ final class ViewModel {
                 me.player.objects.append(Something())
 
                 me.player.player.asObservable()
-                    .do(onNext: { avplayer in
+                    .do(onNext: { [weak self] avplayer in
+                        guard let me = self else { return }
+
                         // AVPlayer configuration should be done right after its initialization.
 
                         // e.g AirPlay by Mirroring
@@ -120,6 +125,21 @@ final class ViewModel {
 
                         // e.g. more responsive playback
                         // avplayer.automaticallyWaitsToMinimizeStalling = false
+
+                        // EXT-X-DATERANGE (In-playlist Timed Metadata)
+                        // https://developer.apple.com/videos/play/wwdc2016/504/
+                        if #available(iOS 9.3, *) {
+                            if let playerItem = avplayer.currentItem {
+                                let collector = AVPlayerItemMetadataCollector()
+                                let collectorDelegate = MetadataCollectorDelegate()
+
+                                me.metadataCollectorDelegate = collectorDelegate // retain
+
+                                collector.setDelegate(collectorDelegate, queue: DispatchQueue.main)
+
+                                playerItem.add(collector)
+                            }
+                        }
                     })
                     .bind(to: me.playerRelay)
                     .disposed(by: me.reloadDisposeBag)
