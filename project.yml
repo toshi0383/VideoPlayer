@@ -1,7 +1,8 @@
 name: Example
 options:
-  minimumXcodeGenVersion: 1.11.2
+  minimumXcodeGenVersion: 2.2.0
   bundleIdPrefix: jp.toshi0383
+  deploymentTarget: [iOS: "9.0"]
 settings:
   SWIFT_VERSION: 4.2
 configFiles:
