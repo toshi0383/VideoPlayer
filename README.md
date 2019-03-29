@@ -60,7 +60,7 @@ See: [VideoPlayerTests](VideoPlayerTests/)
 You can simulate player behavior by yourself to improve test coverage of your app.
 
 # Build Example
-1. Make sure your default `xcode-select -p` points at correct Xcode version.
+1. Make sure your default `xcode-select -p` points at correct Xcode version. (Currently Xcode10.1)
 
 2. Run following
    ```
