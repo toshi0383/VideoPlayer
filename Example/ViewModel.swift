@@ -166,6 +166,7 @@ extension ViewModel {
         _ = URLSession.shared
             .rx.response(request: req)
             .subscribe(onNext: { (res, _) in
+                print("[res.statusCode] \(res.statusCode)")
                 print("[res.allHeaderFields] \(res.allHeaderFields)")
             })
     }
